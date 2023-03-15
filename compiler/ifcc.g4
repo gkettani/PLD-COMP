@@ -2,9 +2,26 @@ grammar ifcc;
 
 axiom : prog ;
 
-prog : 'int' 'main' '(' ')' '{' RETURN CONST ';' '}' ;
+prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 
-RETURN : 'return' ;
+type : INT | CHAR ;
+
+instruction : declare ';'
+            | ret ';'
+            ;
+
+declare: type VAR '=' CONST ;
+
+ret : RET VAR
+    | RET CONST
+    | RET
+    ;
+
+RET: 'return' ;
+
+INT : 'int' ;
+CHAR : 'char' ;
+VAR : [a-zA-Z][a-zA-Z0-9]* ;
 CONST : [0-9]+ ;
 COMMENT : '/*' .*? '*/' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;
