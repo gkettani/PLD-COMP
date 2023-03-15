@@ -10,4 +10,3 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override ;
 
 };
-

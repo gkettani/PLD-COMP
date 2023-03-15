@@ -1,3 +1,5 @@
 /compiler/build
 /compiler/generated
 /compiler/ifcc
+/compiler/c
+./vscode
