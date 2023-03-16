@@ -7,10 +7,13 @@ prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 type : INT | CHAR ;
 
 instruction : declare ';'
+            | affectation ';'
             | ret ';'
             ;
 
-declare: type VAR '=' CONST ;
+declare: type VAR '=' CONST;
+
+affectation: type VAR '=' VAR;
 
 ret : RET VAR
     | RET CONST
