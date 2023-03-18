@@ -3,3 +3,4 @@
 /compiler/ifcc
 /compiler/c
 .vscode
+/tests/ifcc-test-output
