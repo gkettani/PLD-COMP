@@ -62,3 +62,28 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 	// visitChildren(ctx);
 	return 0;
 }
+antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
+{
+	std::cout << " 	# Affectation \n";
+	//Exemple pour mieux comprendre : Pour int b=a
+	//On va extraire l'adresse de 'a' de la table 'variables'
+	std::string  var = ctx->VAR()[1]->getText();
+	int offset = variables[var];
+
+	//je mets le contenu de a dans le registre eax
+	std::cout << " 	movl	" << offset << "(%rbp), %eax\n";
+
+	//je mets le contenu du registre eax dans b : b n'a pas encore 
+	//d'adresse, il faut donc pouvoir lui en donner une sans oublier
+	//de l'enregistrer dans la table 'variables'
+	
+	varCounter += 1;
+	offset = varCounter * -4;
+	variables[ctx->VAR()[0]->getText()] = offset;
+
+	std::cout << "	movl 	%eax, " << offset << "(%rbp)\n" ;
+	visitChildren(ctx);
+
+	return 0;
+
+}

@@ -18,6 +18,9 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 
     virtual antlrcpp::Any visitRet(ifccParser::RetContext *context) override;
 
+	virtual antlrcpp::Any visitAffectation(ifccParser::AffectationContext *context) override;
+
+
 	protected:
 		std::map<std::string, int> variables;
 		int varCounter = 0;
