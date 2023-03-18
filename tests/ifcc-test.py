@@ -163,6 +163,8 @@ if args.debug:
 ######################################################################################
 ## TEST step: actually compile all test-cases with both compilers
 
+passed_tests=0
+
 for jobname in jobs:
     os.chdir(orig_cwd)
 
@@ -184,6 +186,7 @@ for jobname in jobs:
     
     if gccstatus != 0 and ifccstatus != 0:
         ## ifcc correctly rejects invalid program -> test-case ok
+        passed_tests+=1
         print("TEST OK")
         continue
     elif gccstatus != 0 and ifccstatus == 0:
@@ -219,4 +222,13 @@ for jobname in jobs:
         continue
 
     ## last but not least
+    passed_tests+=1
     print("TEST OK")
+
+print("SUMMARY: "+str(len(jobs))+" tests, "+str(len(jobs) - passed_tests)+" failed")
+# if all tests passed, we exit with status 0
+if passed_tests == len(jobs):
+    exit(0)
+
+# else if at least one test failed, we exit with status 1
+exit(1)
