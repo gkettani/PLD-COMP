@@ -23,6 +23,11 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
+    - name: Install required packages
+      run: |
+        sudo apt install antlr4
+        sudo apt install libantlr4-runtime-dev
+        sudo apt install default-jdk
     - name: Make gcc files
       run: |
         cd ./compiler
