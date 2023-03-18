@@ -23,8 +23,8 @@ import subprocess
 
 def command(string, logfile=None):
     """execute `string` as a shell command, optionnaly logging stdout+stderr to a file. return exit status.)"""
-    if args.verbose:
-        print("ifcc-test.py: "+string)
+    # if args.verbose:
+    print("ifcc-test.py: "+string)
     try:
         output=subprocess.check_output(string,stderr=subprocess.STDOUT,shell=True)
         ret= 0
@@ -36,7 +36,7 @@ def command(string, logfile=None):
         f=open(logfile,'w')
         print(output.decode(sys.stdout.encoding)+'\n'+'return code: '+str(ret),file=f)
         f.close()
-
+    print(ret)
     return ret
 
 def dumpfile(name):
