@@ -29,5 +29,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Start tests
       run: |
-        cd tests |
-        python ifcc-test.py testfiles
+        python ./tests/ifcc-test.py ./tests/testfiles
