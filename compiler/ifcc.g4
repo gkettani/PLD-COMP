@@ -4,14 +4,16 @@ axiom : prog ;
 
 prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 
-type : INT | CHAR ;
+type : INT | CHAR | ;
 
 instruction : declare ';'
             | affectation ';'
             | ret ';'
             ;
 
-declare: type VAR '=' CONST;
+declare: type VAR '=' CONST
+       | type VAR
+       ;
 
 affectation: type VAR '=' VAR;
 

@@ -1,15 +1,16 @@
 #include "CodeGenVisitor.h"
+using namespace std;
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
 {
-	std::cout<<".globl	main\n"
+	cout<<".globl	main\n"
 		" main: \n"
 		" 	# prologue \n"
 		" 	pushq %rbp # save %rbp on the stack \n"
 		" 	movq %rsp, %rbp # define %rbp for the current function \n";
 		// " 	movl	$"<<retval<<", %eax\n"
 		visitChildren(ctx);
-		std::cout<<" 	# epilogue \n"
+		cout<<" 	# epilogue \n"
 		" 	popq %rbp # restore %rbp from the stack \n"
 		" 	ret\n";
 
@@ -18,25 +19,25 @@ antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 antlrcpp::Any CodeGenVisitor::visitInstruction(ifccParser::InstructionContext *ctx)
 {
-	std::cout << " 	# instruction \n";
+	cout << " 	# instruction \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 {
-	std::cout << " 	# type \n";
+	cout << " 	# type \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 {
-	int retval = stoi(ctx->CONST()->getText());
+	int retval = ctx->CONST() ? stoi(ctx->CONST()->getText()) : 0;
 	varCounter += 1;
 	int offset = varCounter * -4;
 	variables[ctx->VAR()->getText()] = offset;
-	std::cout<<" 	movl	$"<<retval<<", "<< offset <<"(%rbp)\n";
+	cout<<" 	movl	$"<<retval<<", "<< offset <<"(%rbp)\n";
 	
 	visitChildren(ctx);
 
@@ -46,32 +47,32 @@ antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 {
 	if (ctx->VAR()) {
-		std::string var = ctx->VAR()->getText();
+		string var = ctx->VAR()->getText();
 		int offset = variables[var];
-		std::cout << " 	movl	" << offset << "(%rbp), %eax\n";
+		cout << " 	movl	" << offset << "(%rbp), %eax\n";
 	
 	}
 
 	if (ctx->CONST()) {
-		std::string var = ctx->CONST()->getText();
-		std::cout << " 	movl	$" << var << ", %eax\n";
+		string var = ctx->CONST()->getText();
+		cout << " 	movl	$" << var << ", %eax\n";
 	}
 
-	// std::cout << var << std::endl;
+	// cout << var << endl;
 	// offset = variables[var];
 	// visitChildren(ctx);
 	return 0;
 }
 antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
-	std::cout << " 	# Affectation \n";
+	cout << " 	# Affectation \n";
 	//Exemple pour mieux comprendre : Pour int b=a
 	//On va extraire l'adresse de 'a' de la table 'variables'
-	std::string  var = ctx->VAR()[1]->getText();
+	string  var = ctx->VAR()[1]->getText();
 	int offset = variables[var];
 
 	//je mets le contenu de a dans le registre eax
-	std::cout << " 	movl	" << offset << "(%rbp), %eax\n";
+	cout << " 	movl	" << offset << "(%rbp), %eax\n";
 
 	//je mets le contenu du registre eax dans b : b n'a pas encore 
 	//d'adresse, il faut donc pouvoir lui en donner une sans oublier
@@ -81,7 +82,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	offset = varCounter * -4;
 	variables[ctx->VAR()[0]->getText()] = offset;
 
-	std::cout << "	movl 	%eax, " << offset << "(%rbp)\n" ;
+	cout << "	movl 	%eax, " << offset << "(%rbp)\n" ;
 	visitChildren(ctx);
 
 	return 0;
