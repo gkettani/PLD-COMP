@@ -30,4 +30,4 @@ jobs:
     - name: Start tests
       run: |
         cd tests |
-        python iffc-test.py testfiles
+        python ifcc-test.py testfiles
