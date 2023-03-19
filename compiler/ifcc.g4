@@ -9,22 +9,15 @@ type : INT | CHAR | ;
 instruction : declare ';'
             | affectation ';'
             | comparaison ';'
-            | ret ';'
-            
+            | ret ';'            
             ;
 
-declare: type VAR '=' CONST
-       | type VAR
+declare: type VAR
        ;
 
 affectation: type VAR '=' VAR
             | type VAR '=' comparaison
             ;
-
-
-expr : CONST 
-| VAR
-;
 
 comparaison: expr '>' expr  #sup
 | expr '<' expr             #min
@@ -33,9 +26,16 @@ comparaison: expr '>' expr  #sup
 | '(' comparaison ')'       #parComparisons
 ;
 
-ret : RET VAR
-    | RET CONST
-    | RET  
+
+expr : CONST                      #constExpr
+     | VAR                        #varExpr
+     | expr '&' expr              #andExpr
+     | expr '|' expr              #orExpr
+     | expr '^' expr              #xorExpr
+;
+
+ret : RET expr
+    | RET
     ;
 
 RET: 'return' ;

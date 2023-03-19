@@ -1,93 +1,186 @@
 #include "CodeGenVisitor.h"
 using namespace std;
 
-antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
-{
-	cout<<".globl	_main\n"
-		" _main: \n"
-		" 	# prologue \n"
-		" 	pushq %rbp # save %rbp on the stack \n"
-		" 	movq %rsp, %rbp # define %rbp for the current function \n";
-		// " 	movl	$"<<retval<<", %eax\n"
-		visitChildren(ctx);
-		cout<<" 	# epilogue \n"
-		" 	popq %rbp # restore %rbp from the stack \n"
-		" 	ret\n";
+CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
+CodeGenVisitor::~CodeGenVisitor() {}
+
+antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
+{	
+	// cout<<".globl	main\n"
+	// 	" main: \n"
+	// 	" 	# prologue \n"
+	// 	" 	pushq %rbp # save %rbp on the stack \n"
+	// 	" 	movq %rsp, %rbp # define %rbp for the current function \n";
+	// 	// " 	movl	$"<<retval<<", %eax\n"
+	// 	visitChildren(ctx);
+	// 	cout<<" 	# epilogue \n"
+	// 	" 	popq %rbp # restore %rbp from the stack \n"
+	// 	" 	ret\n";
+
+	visitChildren(ctx);
 
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitInstruction(ifccParser::InstructionContext *ctx)
 {
-	cout << " 	# instruction \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 {
-	cout << " 	# type \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 {
-	int retval = ctx->CONST() ? stoi(ctx->CONST()->getText()) : 0;
+	string var = ctx->VAR()->getText();
+	/* Quand une variable est déclarée mais non initialisée, on lui attribue par défaut la valeur 0*/
+	string varValue = "0";
+
+	/* Mise à jour de la table des symboles*/
 	varCounter += 1;
 	int offset = varCounter * -4;
-	variables[ctx->VAR()->getText()] = offset;
-	cout<<" 	movl	$"<<retval<<", "<< offset <<"(%rbp)\n";
-	
-	visitChildren(ctx);
+	variables[var] = offset;
+
+	/* Ajout de l'instruction au BasicBlock*/
+	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
 
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 {
-	if (ctx->VAR()) {
-		string var = ctx->VAR()->getText();
-		int offset = variables[var];
-		cout << " 	movl	" << offset << "(%rbp), %eax\n";
-	
+	string var = "";
+	string varType = "";
+
+	if(ctx->expr()){
+		var = (string)visit(ctx->expr());
+		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	}else{
+		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
+		var = "$0";
+		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
 
-	if (ctx->CONST()) {
-		string var = ctx->CONST()->getText();
-		cout << " 	movl	$" << var << ", %eax\n";
-	}
-
-	// cout << var << endl;
-	// offset = variables[var];
-	// visitChildren(ctx);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
-	cout << " 	# Affectation \n";
-	//Exemple pour mieux comprendre : Pour int b=a
-	//On va extraire l'adresse de 'a' de la table 'variables'
-	string  var = ctx->VAR()[1]->getText();
-	int offset = variables[var];
 
-	//je mets le contenu de a dans le registre eax
-	cout << " 	movl	" << offset << "(%rbp), %eax\n";
+	/*string var = ctx->VAR()->getText();
 
-	//je mets le contenu du registre eax dans b : b n'a pas encore 
-	//d'adresse, il faut donc pouvoir lui en donner une sans oublier
-	//de l'enregistrer dans la table 'variables'
-	
-	varCounter += 1;
-	offset = varCounter * -4;
-	variables[ctx->VAR()[0]->getText()] = offset;
+	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
+	if (ctx->type())
+	{
+		varCounter += 1;
+		int offset = varCounter * -4;
+		variables[var] = offset;
+	}
 
-	cout << "	movl 	%eax, " << offset << "(%rbp)\n" ;
-	visitChildren(ctx);
+	//On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*
+	string varTmp = (string)visit(ctx->expr());
+
+	//Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire
+	if(varTmp[0] == '$' | varTmp == "%eax"){
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
+	}else{
+		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+	}*/
 
 	return 0;
 
 }
+
+antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitConstExpr(ifccParser::ConstExprContext *ctx)
+{
+	/* Le fait de rajouter le $ permet de répérer facilement les const*/
+	string var = "$" + ctx->CONST()->getText();
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		// Si les opérandes sont toutes les deux des constantes, on fait directement remonter le résultat qui est une constante
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 | val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		// Si les opérandes ne sont pas toutes les deux des constantes, il faut construire des instructions assembleurs en plus
+		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
+{
+	// Même logique que visitOrExpr
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 ^ val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
+{
+	// Même logique que visitOrExpr
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if(var1[0] == '$' && var2[0] == '$') {
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 & val2;
+		resultStr = "$" + to_string(result);
+
+	}else{
+		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
 
 antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
 	cout<<" # comparaison superieur  \n";
