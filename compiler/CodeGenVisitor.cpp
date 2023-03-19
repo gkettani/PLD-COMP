@@ -3,8 +3,8 @@ using namespace std;
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
 {
-	cout<<".globl	main\n"
-		" main: \n"
+	cout<<".globl	_main\n"
+		" _main: \n"
 		" 	# prologue \n"
 		" 	pushq %rbp # save %rbp on the stack \n"
 		" 	movq %rsp, %rbp # define %rbp for the current function \n";
@@ -87,4 +87,41 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	return 0;
 
+}
+
+antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
+	cout<<" # comparaison superieur  \n";
+	string var1 = ctx->expr()[0]->getText();
+	string var2 = ctx->expr()[2]->getText();
+	
+	int offset1 = variables[var1];
+	int offset2 = variables[var2];
+
+	cout << " 	movl	" << offset1 << "(%rbp), %eax\n";
+	cout << " 	movl	" << offset2 << "(%rbp), %ebx\n";
+
+	visitChildren(ctx);
+
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *context){
+	visitChildren(context);
+	return 0;
+
+}
+
+antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *context){
+	visitChildren(context);
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *context) {
+	visitChildren(context);
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitParComparisons(ifccParser::ParComparisonsContext *context){
+	visitChildren(context);
+	return 0;
 }

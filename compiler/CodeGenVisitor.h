@@ -20,6 +20,15 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 
 	virtual antlrcpp::Any visitAffectation(ifccParser::AffectationContext *context) override;
 
+	virtual antlrcpp::Any visitSup(ifccParser::SupContext *context) override;
+
+    virtual antlrcpp::Any visitMin(ifccParser::MinContext *context) override;
+
+    virtual antlrcpp::Any visitDiff(ifccParser::DiffContext *context) override;
+
+    virtual antlrcpp::Any visitEqual(ifccParser::EqualContext *context) override;
+
+    virtual antlrcpp::Any visitParComparisons(ifccParser::ParComparisonsContext *context) override;
 
 	protected:
 		std::map<std::string, int> variables;

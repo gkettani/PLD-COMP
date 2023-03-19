@@ -8,18 +8,34 @@ type : INT | CHAR | ;
 
 instruction : declare ';'
             | affectation ';'
+            | comparaison ';'
             | ret ';'
+            
             ;
 
 declare: type VAR '=' CONST
        | type VAR
        ;
 
-affectation: type VAR '=' VAR;
+affectation: type VAR '=' VAR
+            | type VAR '=' comparaison
+            ;
+
+
+expr : CONST 
+| VAR
+;
+
+comparaison: expr '>' expr  #sup
+| expr '<' expr             #min
+| expr '!=' expr            #diff
+| expr '==' expr            #equal
+| '(' comparaison ')'       #parComparisons
+;
 
 ret : RET VAR
     | RET CONST
-    | RET
+    | RET  
     ;
 
 RET: 'return' ;
