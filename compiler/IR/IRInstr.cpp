@@ -28,15 +28,6 @@ void IRInstr::gen_asm(ostream & o){
         }
         break;
     }
-        
-    case IRInstr::affect:
-    {
-        string var = params[0];
-        string varTmp = params[1];
-        o << " 	movl	" << (*variables)[varTmp] << "(%rbp), %eax\n";
-        o << "	movl 	%eax, " << (*variables)[var] << "(%rbp)\n";
-        break;
-    }
 
     case IRInstr::ldconst:
     {
@@ -47,6 +38,13 @@ void IRInstr::gen_asm(ostream & o){
     }
         
     case IRInstr::copy:
+    {
+        string var = params[0];
+        string varTmp = params[1];
+        o << " 	movl	" << (*variables)[varTmp] << "(%rbp), %eax\n";
+        o << "	movl 	%eax, " << (*variables)[var] << "(%rbp)\n";
+        break;
+    }
         break;
 
     case IRInstr::add:
