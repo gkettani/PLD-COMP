@@ -11,14 +11,19 @@ instruction : declare ';'
             | ret ';'
             ;
 
-declare: type VAR '=' CONST
-       | type VAR
+declare: type VAR
        ;
 
-affectation: type VAR '=' VAR;
+affectation: type VAR '=' expr;
 
-ret : RET VAR
-    | RET CONST
+expr : CONST                      #constExpr
+     | VAR                        #varExpr
+     | expr '&' expr              #andExpr
+     | expr '|' expr              #orExpr
+     | expr '^' expr              #xorExpr
+;
+
+ret : RET expr
     | RET
     ;
 
