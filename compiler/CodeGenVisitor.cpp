@@ -1,90 +1,172 @@
 #include "CodeGenVisitor.h"
 using namespace std;
 
-antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
+CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
+CodeGenVisitor::~CodeGenVisitor() {}
+
+antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
-	cout<<".globl	main\n"
-		" main: \n"
-		" 	# prologue \n"
-		" 	pushq %rbp # save %rbp on the stack \n"
-		" 	movq %rsp, %rbp # define %rbp for the current function \n";
-		// " 	movl	$"<<retval<<", %eax\n"
-		visitChildren(ctx);
-		cout<<" 	# epilogue \n"
-		" 	popq %rbp # restore %rbp from the stack \n"
-		" 	ret\n";
+	// cout<<".globl	main\n"
+	// 	" main: \n"
+	// 	" 	# prologue \n"
+	// 	" 	pushq %rbp # save %rbp on the stack \n"
+	// 	" 	movq %rsp, %rbp # define %rbp for the current function \n";
+	// 	// " 	movl	$"<<retval<<", %eax\n"
+	// 	visitChildren(ctx);
+	// 	cout<<" 	# epilogue \n"
+	// 	" 	popq %rbp # restore %rbp from the stack \n"
+	// 	" 	ret\n";
+
+	visitChildren(ctx);
 
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitInstruction(ifccParser::InstructionContext *ctx)
 {
-	cout << " 	# instruction \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 {
-	cout << " 	# type \n";
 	visitChildren(ctx);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 {
-	int retval = ctx->CONST() ? stoi(ctx->CONST()->getText()) : 0;
+	string var = ctx->VAR()->getText();
+	string varValue = "0";
+
 	varCounter += 1;
 	int offset = varCounter * -4;
-	variables[ctx->VAR()->getText()] = offset;
-	cout<<" 	movl	$"<<retval<<", "<< offset <<"(%rbp)\n";
-	
-	visitChildren(ctx);
+	variables[var] = offset;
+
+	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
 
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 {
-	if (ctx->VAR()) {
-		string var = ctx->VAR()->getText();
-		int offset = variables[var];
-		cout << " 	movl	" << offset << "(%rbp), %eax\n";
-	
+	string var = "";
+	string varType = "";
+
+	if(ctx->expr()){
+		var = (string)visit(ctx->expr());
+		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	}else{
+		var = "$0";
+		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
 
-	if (ctx->CONST()) {
-		string var = ctx->CONST()->getText();
-		cout << " 	movl	$" << var << ", %eax\n";
-	}
-
-	// cout << var << endl;
-	// offset = variables[var];
-	// visitChildren(ctx);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
-	cout << " 	# Affectation \n";
-	//Exemple pour mieux comprendre : Pour int b=a
-	//On va extraire l'adresse de 'a' de la table 'variables'
-	string  var = ctx->VAR()[1]->getText();
-	int offset = variables[var];
 
-	//je mets le contenu de a dans le registre eax
-	cout << " 	movl	" << offset << "(%rbp), %eax\n";
+	string var = ctx->VAR()->getText();
+	if (ctx->type())
+	{
+		varCounter += 1;
+		int offset = varCounter * -4;
+		variables[var] = offset;
+	}
 
-	//je mets le contenu du registre eax dans b : b n'a pas encore 
-	//d'adresse, il faut donc pouvoir lui en donner une sans oublier
-	//de l'enregistrer dans la table 'variables'
-	
-	varCounter += 1;
-	offset = varCounter * -4;
-	variables[ctx->VAR()[0]->getText()] = offset;
+	string varTmp = (string)visit(ctx->expr());
 
-	cout << "	movl 	%eax, " << offset << "(%rbp)\n" ;
-	visitChildren(ctx);
+	if(varTmp[0] == '$' | varTmp == "%eax"){
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
+	}else{
+		cfg.current_bb->add_IRInstr(IRInstr::affect, {var, varTmp}, &variables);
+	}
 
 	return 0;
 
+}
+
+antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitConstExpr(ifccParser::ConstExprContext *ctx)
+{
+	string var = "$" + ctx->CONST()->getText();
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (!(var1[0] == '$' && var2[0] == '$'))
+	{
+		// Si les opérandes ne sont pas toutes les deux des constantes
+		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+	else
+	{
+		// Si les opérandes sont toutes les deux des constantes
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 | val2;
+		resultStr = "$" + to_string(result);
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (!(var1[0] == '$' && var2[0] == '$'))
+	{
+		// Si les opérandes ne sont pas toutes les deux des constantes
+		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+	else
+	{
+		// Si les opérandes sont toutes les deux des constantes
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 ^ val2;
+		resultStr = "$" + to_string(result);
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if(!(var1[0] == '$' && var2[0] == '$')) {
+		// Si les opérandes ne sont pas toutes les deux des constantes
+		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}else{
+		// Si les opérandes sont toutes les deux des constantes
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 & val2;
+		resultStr = "$" + to_string(result);
+	}
+
+	return resultStr;
 }
