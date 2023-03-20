@@ -180,3 +180,38 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 
 	return resultStr;
 }
+
+antlrcpp::Any CodeGenVisitor::visitNegExpr(ifccParser::NegExprContext *ctx)
+{
+	string var =visit(ctx->expr());
+
+	string resultStr = "";
+
+	if(var[0] == '$' ) {
+		int val = stoi(ctx->expr()->getText());
+		int result = - val;
+		resultStr = "$" + to_string(result);
+
+	}else{
+		cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+		resultStr = "%eax";
+	}
+	return resultStr;
+}
+antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
+{
+	string var =visit(ctx->expr());
+
+	string resultStr = "";
+
+	if(var[0] == '$' ) {
+		int val = stoi(ctx->expr()->getText());
+		int result = ! val;
+		resultStr = "$" + to_string(result);
+
+	}else{
+		cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+		resultStr = "%eax";
+	}
+	return resultStr;
+}

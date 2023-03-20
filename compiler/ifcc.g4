@@ -21,6 +21,8 @@ expr : CONST                      #constExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr
+     | '-' expr                   #negExpr
+     | '!' expr                   #notExpr
 ;
 
 ret : RET expr
