@@ -164,9 +164,9 @@ void IRInstr::gen_asm(ostream & o){
     {
         string var = params[0];
 
-        o << "cmpl	$"<<var<<" , "<<(*variables)[var]<<"(%rbp)\n";
+        o << "cmpl	$0, "<<(*variables)[var]<<"(%rbp)\n";
         o << "sete  %al\n";
-        o << "	movzbl	%al, %eax\n";
+        o << "movzbl	%al, %eax\n";
          
         break;
     }
