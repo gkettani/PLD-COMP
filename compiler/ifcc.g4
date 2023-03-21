@@ -23,7 +23,10 @@ expr : CONST                      #constExpr
      | expr '^' expr              #xorExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
-;
+     | expr '+' expr              #plusExpr
+     | expr '-' expr              #minusExpr
+     | expr '*' expr              #multExpr
+     ;
 
 ret : RET expr
     | RET

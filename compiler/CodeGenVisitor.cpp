@@ -215,3 +215,72 @@ antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
 	}
 	return resultStr;
 }
+
+antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 + val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 - val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(ctx->expr(0)->getText());
+		int val2 = stoi(ctx->expr(1)->getText());
+		int result = val1 * val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2}, &variables);
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
