@@ -11,8 +11,11 @@ instruction : declare ';'
             | ret ';'
             ;
 
-declare: type VAR
+declare: type listvar 
        ;
+
+listvar: VAR (',' VAR)*
+        ;
 
 affectation: type VAR '=' expr;
 

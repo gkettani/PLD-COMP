@@ -29,6 +29,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitMultExpr(ifccParser::MultExprContext *ctx) override;
 		virtual antlrcpp::Any visitPlusExpr(ifccParser::PlusExprContext *ctx) override;
 		virtual antlrcpp::Any visitMinusExpr(ifccParser::MinusExprContext *ctx) override;
+		virtual antlrcpp::Any visitListvar(ifccParser::ListvarContext *ctx) override;
 
     
 	protected:
