@@ -37,8 +37,8 @@ void CFG::gen_asm(ostream& o){
 }
 
 void CFG::gen_asm_prologue(ostream& o){
-    o << ".globl	_main\n";
-    o << " _main: \n";
+    o << ".globl	main\n";
+    o << " main: \n";
     o << " 	# prologue \n";
     o << " 	pushq %rbp # save %rbp on the stack \n";
     o << " 	movq %rsp, %rbp # define %rbp for the current function \n";
