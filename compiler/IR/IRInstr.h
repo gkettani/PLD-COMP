@@ -32,7 +32,9 @@ class IRInstr{
             op_sup,
             op_min,
             op_equal,
-            op_diff
+            op_diff,
+            op_neg,
+            op_not
         } Operation;
 
         IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, int> *symboleTable);

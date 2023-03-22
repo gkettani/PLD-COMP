@@ -27,6 +27,11 @@ expr : CONST                      #constExpr
      | expr '<' expr              #min
      | expr '!=' expr             #diff
      | expr '==' expr             #equal
+     | '-' expr                   #negExpr
+     | '!' expr                   #notExpr
+     | expr '+' expr              #plusExpr
+     | expr '-' expr              #minusExpr
+     | expr '*' expr              #multExpr
      ;
 
 ret : RET expr
