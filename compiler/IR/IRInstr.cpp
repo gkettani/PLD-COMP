@@ -23,7 +23,7 @@ void IRInstr::gen_asm(ostream & o){
         o << " 	# Instruction \n";
         if (var[0] == '$'){
             o << " 	movl	" << var << ", %eax\n";
-        }else{
+        }else if (var != "%eax"){ 
             o << " 	movl	" << (*variables)[var] << "(%rbp), %eax\n";
         }
         break;
@@ -148,6 +148,106 @@ void IRInstr::gen_asm(ostream & o){
             o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
             o << "	xorl	" << (*variables)[var2] << "(%rbp), %eax\n";
         }
+
+        break;
+    }
+
+    case IRInstr::op_sup:
+    {
+        string var1 = params[0];
+        string var2 = params[1];
+
+        if(var1[0] != '$' && var2[0] == '$'){
+            o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+        }
+
+        if(var1[0] == '$' && var2[0] != '$'){
+            o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+        }
+
+        if(var1[0] != '$' && var2[0] != '$'){
+            o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+            o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+        }
+
+        o << "	setg	"<<  "%al\n";
+        o << "  andb	$1, %al\n";
+        o << "  movzbl	%al, %eax\n";
+
+        break;
+    }
+
+    case IRInstr::op_min:
+    {
+        string var1 = params[0];
+        string var2 = params[1];
+
+        if(var1[0] != '$' && var2[0] == '$'){
+            o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+        }
+
+        if(var1[0] == '$' && var2[0] != '$'){
+            o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+        }
+
+        if(var1[0] != '$' && var2[0] != '$'){
+            o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+            o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+        }
+
+        o << "	setl	"<<  "%al\n";
+        o << "  andb	$1, %al\n";
+        o << "  movzbl	%al, %eax\n";
+
+        break;
+    }
+
+    case IRInstr::op_equal:
+    {
+        string var1 = params[0];
+        string var2 = params[1];
+
+        if(var1[0] != '$' && var2[0] == '$'){
+            o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+        }
+
+        if(var1[0] == '$' && var2[0] != '$'){
+            o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+        }
+
+        if(var1[0] != '$' && var2[0] != '$'){
+            o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+            o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+        }
+
+        o << "	sete	"<<  "%al\n";
+        o << "  andb	$1, %al\n";
+        o << "  movzbl	%al, %eax\n";
+
+        break;
+    }
+
+    case IRInstr::op_diff:
+    {
+        string var1 = params[0];
+        string var2 = params[1];
+
+        if(var1[0] != '$' && var2[0] == '$'){
+            o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+        }
+
+        if(var1[0] == '$' && var2[0] != '$'){
+            o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+        }
+
+        if(var1[0] != '$' && var2[0] != '$'){
+            o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+            o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+        }
+
+        o << "	setne	"<<  "%al\n";
+        o << "  andb	$1, %al\n";
+        o << "  movzbl	%al, %eax\n";
 
         break;
     }

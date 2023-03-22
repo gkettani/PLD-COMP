@@ -71,7 +71,7 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
 {
 
-	/*string var = ctx->VAR()->getText();
+	string var = ctx->VAR()->getText();
 
 	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
@@ -89,7 +89,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}else{
 		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
-	}*/
+	}
 
 	return 0;
 
@@ -181,40 +181,53 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	return resultStr;
 }
 
-
 antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
-	cout<<" # comparaison superieur  \n";
-	string var1 = ctx->expr()[0]->getText();
-	string var2 = ctx->expr()[2]->getText();
+
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	resultStr = "%eax";
 	
-	int offset1 = variables[var1];
-	int offset2 = variables[var2];
-
-	cout << " 	movl	" << offset1 << "(%rbp), %eax\n";
-	cout << " 	movl	" << offset2 << "(%rbp), %ebx\n";
-
-	visitChildren(ctx);
-
-	return 0;
+	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *context){
-	visitChildren(context);
-	return 0;
+antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *ctx){
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
 
 }
 
-antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *context){
-	visitChildren(context);
-	return 0;
+antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *ctx){
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *context) {
-	visitChildren(context);
-	return 0;
+antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *ctx) {
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitParComparisons(ifccParser::ParComparisonsContext *context){
-	visitChildren(context);
-	return 0;
-}

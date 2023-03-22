@@ -32,7 +32,8 @@ class  CodeGenVisitor : public ifccBaseVisitor {
     	virtual antlrcpp::Any visitDiff(ifccParser::DiffContext *context) override;
 
     	virtual antlrcpp::Any visitEqual(ifccParser::EqualContext *context) override;
-		antlrcpp::Any visitParComparisons(ifccParser::ParComparisonsContext *context) override;
+
+
 
 		protected:
 			CFG& cfg;
