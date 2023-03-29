@@ -121,7 +121,7 @@ antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
 		int val1 = stoi(ctx->expr(0)->getText());
 		int val2 = stoi(ctx->expr(1)->getText());
 		int result = val1 | val2;
-		resultStr = "$" + to_string(result);
+		resultStr = "$" + to_string(result); 
 	}
 	else
 	{
