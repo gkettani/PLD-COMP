@@ -23,10 +23,8 @@ expr : CONST                      #constExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr
-     | expr '>' expr              #sup
-     | expr '<' expr              #min
-     | expr '!=' expr             #diff
-     | expr '==' expr             #equal
+     | expr COMPAREOP expr        #compareExpr
+     | expr EQUALOP expr             #equalExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
      | expr '+' expr              #plusExpr
@@ -39,6 +37,14 @@ ret : RET expr
     ;
 
 RET: 'return' ;
+
+COMPAREOP: '>'
+| '<'
+;
+
+EQUALOP: '=='
+| '!='
+;
 
 INT : 'int' ;
 CHAR : 'char' ;
