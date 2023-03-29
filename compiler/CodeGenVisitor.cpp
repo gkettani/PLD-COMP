@@ -85,9 +85,13 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	string varTmp = (string)visit(ctx->expr());
 
 	//Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire
-	if(varTmp[0] == '$' | varTmp == "%eax"){
+	// if(varTmp[0] == '$' || varTmp == "%eax"){
+	if (varTmp[0] == '$')
+	{
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
-	}else{
+	}
+	else
+	{
 		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
 	}
 
@@ -168,14 +172,19 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	string resultStr = "";
 
 	if(var1[0] == '$' && var2[0] == '$') {
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 & val2;
 		resultStr = "$" + to_string(result);
 
 	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+		
+		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
