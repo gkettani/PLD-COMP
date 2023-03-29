@@ -5,7 +5,7 @@ CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
 CodeGenVisitor::~CodeGenVisitor() {}
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
-{
+{	
 	// cout<<".globl	main\n"
 	// 	" main: \n"
 	// 	" 	# prologue \n"
@@ -64,7 +64,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	string var = ctx->VAR()->getText();
 
-	/* S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles*/
+	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
 	{
 		varCounter += 1;
@@ -171,6 +171,56 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 		resultStr = "%eax";
 	}
 
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
+
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *ctx){
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
+
+}
+
+antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *ctx){
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *ctx) {
+	string resultStr = "";
+
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	resultStr = "%eax";
+	
 	return resultStr;
 }
 

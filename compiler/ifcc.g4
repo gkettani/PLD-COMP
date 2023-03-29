@@ -8,7 +8,7 @@ type : INT | CHAR | ;
 
 instruction : declare ';'
             | affectation ';'
-            | ret ';'
+            | ret ';'            
             ;
 
 declare: type listvar 
@@ -17,13 +17,19 @@ declare: type listvar
 listvar: VAR (',' VAR)*
         ;
 
-affectation: type VAR '=' expr;
+affectation: type VAR '=' expr
+        ;
+
 
 expr : CONST                      #constExpr
      | VAR                        #varExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr
+     | expr '>' expr              #sup
+     | expr '<' expr              #min
+     | expr '!=' expr             #diff
+     | expr '==' expr             #equal
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
      | expr '+' expr              #plusExpr
@@ -32,7 +38,7 @@ expr : CONST                      #constExpr
      ;
 
 ret : RET expr
-    | RET
+    | RET 
     ;
 
 RET: 'return' ;
