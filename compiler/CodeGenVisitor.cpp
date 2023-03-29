@@ -104,7 +104,13 @@ antlrcpp::Any CodeGenVisitor::visitConstExpr(ifccParser::ConstExprContext *ctx)
 	return var;
 }
 
-antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx)
+{
+	string expr = visit(ctx->expr());
+	return expr;
+}
+
+	antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
 {
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));

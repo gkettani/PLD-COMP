@@ -25,16 +25,16 @@ affectation: type VAR '=' expr
 expr : CONST                      #constExpr
      | VAR                        #varExpr
      | '(' expr ')'               #parExpr
-     | expr '&' expr              #andExpr
-     | expr '|' expr              #orExpr
-     | expr '^' expr              #xorExpr
-     | expr COMPAREOP expr        #compareExpr
-     | expr EQUALOP expr             #equalExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
-     | expr '*' expr              #multExpr
+     | expr '*' expr              #multExpr 
      | expr '+' expr              #plusExpr
-     | expr '-' expr              #minusExpr  
+     | expr '-' expr              #minusExpr
+     | expr COMPAREOP expr        #compareExpr
+     | expr EQUALOP expr          #equalExpr
+     | expr '&' expr              #andExpr
+     | expr '^' expr              #xorExpr
+     | expr '|' expr              #orExpr
      | expr '&' expr              #andExpr
      | expr '^' expr              #xorExpr 
      | expr '|' expr              #orExpr
