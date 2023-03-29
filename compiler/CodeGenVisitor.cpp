@@ -36,18 +36,9 @@ antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 {
-	string var = ctx->VAR()->getText();
-	/* Quand une variable est déclarée mais non initialisée, on lui attribue par défaut la valeur 0*/
-	string varValue = "0";
 
-	/* Mise à jour de la table des symboles*/
-	varCounter += 1;
-	int offset = varCounter * -4;
-	variables[var] = offset;
-
-	/* Ajout de l'instruction au BasicBlock*/
-	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
-
+	visit(ctx->listvar());
+	
 	return 0;
 }
 
@@ -57,7 +48,7 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 	string varType = "";
 
 	if(ctx->expr()){
-		var = (string)visit(ctx->expr());
+		var = visit(ctx->expr()).as<string>();
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}else{
 		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
@@ -81,11 +72,14 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		variables[var] = offset;
 	}
 
-	//On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*
-	string varTmp = (string)visit(ctx->expr());
 
-	if (varTmp[0] == '$')
-	{
+
+	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
+	string varTmp = visit(ctx->expr()).as<string>();
+
+	
+	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
+	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}
 	else
@@ -198,51 +192,33 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
-
+antlrcpp::Any CodeGenVisitor::visitCompareExpr(ifccParser::CompareExprContext *ctx){
 	string resultStr = "";
 
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
-	cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	if(ctx->COMPAREOP()->getText() == ">"){
+		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	}if(ctx->COMPAREOP()->getText() == "<"){
+		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+	}
 	resultStr = "%eax";
 	
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *ctx){
+antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	string resultStr = "";
 
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
-	cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
-	resultStr = "%eax";
-	
-	return resultStr;
-
-}
-
-antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *ctx){
-	string resultStr = "";
-
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
-	resultStr = "%eax";
-	
-	return resultStr;
-}
-
-antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *ctx) {
-	string resultStr = "";
-
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	if(ctx->EQUALOP()->getText() == "=="){
+		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	}if(ctx->EQUALOP()->getText() == "!="){
+		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+	}
 	resultStr = "%eax";
 	
 	return resultStr;
@@ -365,4 +341,34 @@ antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
 	}
 
 	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
+{
+	
+	//récuperer la liste des variables 
+	string var = ctx->getText();
+	string delimiter = ",";
+	string varValue;
+	size_t pos = 0;
+	string token;
+	//split la liste des variables
+	while ((pos = var.find(delimiter)) != std::string::npos) {
+    token = var.substr(0, pos);
+	varValue = "0";
+	varCounter += 1;
+	int offset = varCounter * -4;
+	variables[token] = offset;
+	cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
+    var.erase(0, pos + delimiter.length());
+	}
+	varValue = "0";
+	varCounter += 1;
+	int offset = varCounter * -4;
+	variables[var] = offset;
+	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
+
+
+return 0;
+
 }

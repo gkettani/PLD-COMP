@@ -4,18 +4,22 @@ axiom : prog ;
 
 prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 
-type : INT | CHAR | ;
+type : INT | CHAR ;
 
 instruction : declare ';'
             | affectation ';'
             | ret ';'            
             ;
 
-declare: type VAR
+declare: type listvar 
        ;
 
+listvar: VAR (',' VAR)*
+        ;
+
 affectation: type VAR '=' expr
-            ;
+                | VAR '=' expr
+        ;
 
 
 expr : CONST                      #constExpr
@@ -24,10 +28,8 @@ expr : CONST                      #constExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr
-     | expr '>' expr              #sup
-     | expr '<' expr              #min
-     | expr '!=' expr             #diff
-     | expr '==' expr             #equal
+     | expr COMPAREOP expr        #compareExpr
+     | expr EQUALOP expr             #equalExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
      | expr '*' expr              #multExpr
@@ -43,6 +45,14 @@ ret : RET expr
     ;
 
 RET: 'return' ;
+
+COMPAREOP: '>'
+| '<'
+;
+
+EQUALOP: '=='
+| '!='
+;
 
 INT : 'int' ;
 CHAR : 'char' ;

@@ -133,10 +133,18 @@ void IRInstr::gen_asm(ostream & o){
             break;
         }
 
-        case IRInstr::rmem:
-            break;
 
         case IRInstr::wmem:
+            {
+                string var = params[0];
+                string offset = params[1];
+                string value = params[2];
+
+               //change the value of the variable
+                o << "	movl	"<<value<<", " << (*variables)[var] << "(%rbp)\n";
+                break;
+            }
+        case IRInstr::rmem:
             break;
 
         case IRInstr::call:
