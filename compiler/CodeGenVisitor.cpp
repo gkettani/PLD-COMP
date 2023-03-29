@@ -174,51 +174,33 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitSup(ifccParser::SupContext *ctx){
-
+antlrcpp::Any CodeGenVisitor::visitCompareExpr(ifccParser::CompareExprContext *ctx){
 	string resultStr = "";
 
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
-	cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	if(ctx->COMPAREOP()->getText() == ">"){
+		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+	}if(ctx->COMPAREOP()->getText() == "<"){
+		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+	}
 	resultStr = "%eax";
 	
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitMin(ifccParser::MinContext *ctx){
+antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	string resultStr = "";
 
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
-	cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
-	resultStr = "%eax";
-	
-	return resultStr;
-
-}
-
-antlrcpp::Any CodeGenVisitor::visitDiff(ifccParser::DiffContext *ctx){
-	string resultStr = "";
-
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
-	resultStr = "%eax";
-	
-	return resultStr;
-}
-
-antlrcpp::Any CodeGenVisitor::visitEqual(ifccParser::EqualContext *ctx) {
-	string resultStr = "";
-
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	if(ctx->EQUALOP()->getText() == "=="){
+		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+	}if(ctx->EQUALOP()->getText() == "!="){
+		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+	}
 	resultStr = "%eax";
 	
 	return resultStr;
