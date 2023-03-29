@@ -24,6 +24,7 @@ affectation: type VAR '=' expr
 
 expr : CONST                      #constExpr
      | VAR                        #varExpr
+     | '(' expr ')'               #parExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr
@@ -31,9 +32,12 @@ expr : CONST                      #constExpr
      | expr EQUALOP expr             #equalExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
-     | expr '+' expr              #plusExpr
-     | expr '-' expr              #minusExpr
      | expr '*' expr              #multExpr
+     | expr '+' expr              #plusExpr
+     | expr '-' expr              #minusExpr  
+     | expr '&' expr              #andExpr
+     | expr '^' expr              #xorExpr 
+     | expr '|' expr              #orExpr
      ;
 
 ret : RET expr

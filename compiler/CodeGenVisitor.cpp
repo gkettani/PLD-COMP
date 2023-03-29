@@ -81,7 +81,9 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
-	}else{
+	}
+	else
+	{
 		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
 	}
 
@@ -112,16 +114,21 @@ antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
 	if (var1[0] == '$' && var2[0] == '$')
 	{
 		// Si les opérandes sont toutes les deux des constantes, on fait directement remonter le résultat qui est une constante
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 | val2;
-		resultStr = "$" + to_string(result);
+		resultStr = "$" + to_string(result); 
 	}
 	else
 	{
 		// Si les opérandes ne sont pas toutes les deux des constantes, il faut construire des instructions assembleurs en plus
-		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -138,15 +145,20 @@ antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
 
 	if (var1[0] == '$' && var2[0] == '$')
 	{
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 ^ val2;
 		resultStr = "$" + to_string(result);
 	}
 	else
 	{
-		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -162,14 +174,19 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	string resultStr = "";
 
 	if(var1[0] == '$' && var2[0] == '$') {
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 & val2;
 		resultStr = "$" + to_string(result);
 
 	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+		
+		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -251,15 +268,20 @@ antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
 
 	if (var1[0] == '$' && var2[0] == '$')
 	{
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 + val2;
 		resultStr = "$" + to_string(result);
 	}
 	else
 	{
-		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -274,15 +296,20 @@ antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
 
 	if (var1[0] == '$' && var2[0] == '$')
 	{
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 - val2;
 		resultStr = "$" + to_string(result);
 	}
 	else
 	{
-		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -297,15 +324,20 @@ antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
 
 	if (var1[0] == '$' && var2[0] == '$')
 	{
-		int val1 = stoi(ctx->expr(0)->getText());
-		int val2 = stoi(ctx->expr(1)->getText());
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
 		int result = val1 * val2;
 		resultStr = "$" + to_string(result);
 	}
 	else
 	{
-		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2}, &variables);
-		resultStr = "%eax";
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
 	}
 
 	return resultStr;
