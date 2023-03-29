@@ -4,7 +4,7 @@ axiom : prog ;
 
 prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 
-type : INT | CHAR | ;
+type : INT | CHAR ;
 
 instruction : declare ';'
             | affectation ';'
@@ -18,6 +18,7 @@ listvar: VAR (',' VAR)*
         ;
 
 affectation: type VAR '=' expr
+                | VAR '=' expr
         ;
 
 
