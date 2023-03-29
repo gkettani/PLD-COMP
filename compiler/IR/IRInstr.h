@@ -29,6 +29,10 @@ class IRInstr{
             op_and,
             op_or,
             op_xor,
+            op_sup,
+            op_min,
+            op_equal,
+            op_diff,
             op_neg,
             op_not
         } Operation;
