@@ -35,8 +35,13 @@ antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 }
 
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
-{
-
+{	
+	string var = ctx->listvar()->getText();
+	//Vérifier si la variable a déjà été déclarée 
+	 if (variables.find(var) != variables.end()) {
+        std::cerr << "Error: variable '" << var << "' already defined\n";
+        throw "Error duplicate variable declaration";
+    }
 	visit(ctx->listvar());
 	
 	return 0;
@@ -63,16 +68,23 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 {
 
 	string var = ctx->VAR()->getText();
-
+	
 	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
 	{
-		varCounter += 1;
-		int offset = varCounter * -4;
-		variables[var] = offset;
-	}
-
-
+		/*Vérifier d'abord si cette variable a déjà été déclarée
+		Dans ce cas, we throw an error*/
+		if (variables.find(var) != variables.end()) {
+        	std::cerr << "Error: variable '" << var << "' already defined\n";
+        	throw "Error duplicate variable declaration";
+		}
+		//Sinon, on l'ajoute dans la table des symboles
+		else{
+			varCounter += 1;
+			int offset = varCounter * -4;
+			variables[var] = offset;
+		}
+    }
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
