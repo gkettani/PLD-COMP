@@ -352,7 +352,7 @@ void IRInstr::gen_asm(ostream & o){
             string var = params[0];
 
             o << "	movl	" << (*variables)[var] << "(%rbp), %eax\n";
-            o << "negl	%eax\n";
+            o << "    negl	%eax\n";
 
             break;
         }
@@ -360,9 +360,9 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
 
-            o << "cmpl	$0, "<<(*variables)[var]<<"(%rbp)\n";
-            o << "sete  %al\n";
-            o << "movzbl	%al, %eax\n";
+            o << "  cmpl	$0, "<<(*variables)[var]<<"(%rbp)\n";
+            o << "  sete  %al\n";
+            o << "  movzbl	%al, %eax\n";
             
             break;
         }
