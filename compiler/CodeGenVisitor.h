@@ -34,11 +34,13 @@ class  CodeGenVisitor : public ifccBaseVisitor {
     	virtual antlrcpp::Any visitMin(ifccParser::MinContext *context) override;
     	virtual antlrcpp::Any visitDiff(ifccParser::DiffContext *context) override;
     	virtual antlrcpp::Any visitEqual(ifccParser::EqualContext *context) override;
+		virtual antlrcpp::Any visitUsedvar(ifccParser::UsedvarContext *context) override;
 
 
 		protected:
 			CFG& cfg;
 			map<string, int> variables;
+			map<string, int> unusedvariables;
 			int varCounter = 0;
 
 };

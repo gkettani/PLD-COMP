@@ -55,6 +55,12 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 		var = "$0";
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
+	string temp="";
+	for(auto i=unusedvariables.begin();i != unusedvariables.end();i++){
+		if(!i->second){
+			cfg.current_bb->add_IRInstr(IRInstr::call, {var}, &variables);
+		}
+	}
 
 	return 0;
 }
@@ -70,6 +76,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		varCounter += 1;
 		int offset = varCounter * -4;
 		variables[var] = offset;
+		unusedvariables[var] = 0;
 	}
 
 
@@ -91,8 +98,9 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
-	string var = ctx->VAR()->getText();
-	return var;
+	string var = visit(ctx->usedvar());
+	unusedvariables[var]++;
+	return visit(ctx->usedvar());
 }
 
 antlrcpp::Any CodeGenVisitor::visitConstExpr(ifccParser::ConstExprContext *ctx)
@@ -345,6 +353,7 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	varCounter += 1;
 	int offset = varCounter * -4;
 	variables[token] = offset;
+	unusedvariables[token] = 0;//ajout d'une variable non utilisée
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
     var.erase(0, pos + delimiter.length());
 	}
@@ -352,9 +361,15 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	varCounter += 1;
 	int offset = varCounter * -4;
 	variables[var] = offset;
+	unusedvariables[token] = 0;//ajout d'une variable non utilisée
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
 
 
 return 0;
 
 }
+
+antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *context) {
+		string var = context->VAR()->getText();
+		return var;
+};

@@ -20,10 +20,11 @@ listvar: VAR (',' VAR)*
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
-
+usedvar: VAR                    
+        ;                     
 
 expr : CONST                      #constExpr
-     | VAR                        #varExpr
+     | usedvar                    #varExpr
      | expr '&' expr              #andExpr
      | expr '|' expr              #orExpr
      | expr '^' expr              #xorExpr

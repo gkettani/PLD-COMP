@@ -24,6 +24,7 @@ void IRInstr::gen_asm(ostream & o){
                 o << " 	movl	" << var << ", %eax\n";
             }else if (var != "%eax"){ 
                 o << " 	movl	" << (*variables)[var] << "(%rbp), %eax\n";
+                
             }
             break;
         }
@@ -136,7 +137,10 @@ void IRInstr::gen_asm(ostream & o){
             break;
 
         case IRInstr::call:
+        {
             break;
+        }
+            
 
         case IRInstr::cmp_eq:
             break;
