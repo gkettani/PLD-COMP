@@ -20,14 +20,16 @@ listvar: VAR (',' VAR)*
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
-
+usedvar: VAR                    
+        ;                     
 
 expr : CONST                      #constExpr
-     | VAR                        #varExpr
+     | usedvar                    #varExpr
      | '(' expr ')'               #parExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
      | expr '*' expr              #multExpr 
+     | expr '/' expr              #divExpr
      | expr '-' expr              #minusExpr
      | expr '+' expr              #plusExpr
      | expr COMPAREOP expr        #compareExpr
@@ -35,13 +37,10 @@ expr : CONST                      #constExpr
      | expr '&' expr              #andExpr
      | expr '^' expr              #xorExpr
      | expr '|' expr              #orExpr
-     | expr '&' expr              #andExpr
-     | expr '^' expr              #xorExpr 
-     | expr '|' expr              #orExpr
      ;
 
 ret : RET expr
-    | RET 
+    | RET
     ;
 
 RET: 'return' ;
