@@ -39,7 +39,7 @@ expr : CONST                      #constExpr
      ;
 
 ret : RET expr
-    | RET 
+    | RET
     ;
 
 RET: 'return' ;

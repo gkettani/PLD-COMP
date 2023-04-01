@@ -51,21 +51,25 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 {
 	string var = "";
 	string varType = "";
-
 	if(ctx->expr()){
 		var = visit(ctx->expr()).as<string>();
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}else{
 		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
-		var = "$0";
+		var = "$41";
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
 	string temp="";
-	for(auto i=unusedvariables.begin();i != unusedvariables.end();i++){
-		if(!i->second){
-			cfg.current_bb->add_IRInstr(IRInstr::call, {var}, &variables);
+	
+
+	//iterate over the unused variables and print them
+	for (auto it = unusedvariables.begin(); it != unusedvariables.end(); ++it)
+	{
+		if(it->second == 0){
+			temp += it->first;
 		}
 	}
+	//std::cerr <<temp;
 
 	return 0;
 }
@@ -89,7 +93,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 			varCounter += 1;
 			int offset = varCounter * -4;
 			variables[var] = offset;
-			unusedvariables[var] = 0;
+			unusedvariables.insert({var,0});
 	}
     }
 
@@ -393,7 +397,7 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	varCounter += 1;
 	int offset = varCounter * -4;
 	variables[var] = offset;
-	unusedvariables[token] = 0;//ajout d'une variable non utilisée
+	unusedvariables[var] = 0;//ajout d'une variable non utilisée
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
 
 
