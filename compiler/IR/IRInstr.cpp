@@ -7,6 +7,48 @@ using namespace std;
 
 IRInstr::IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, int>* symboleTable) : bb(bb), op(op), params(params), variables(symboleTable) {}
 
+void binaryOperation(ostream & o, string var1, string var2, string varTmp, map<string, int> *variables, string operation){
+    if (var1[0] != '$' && var2[0] == '$')
+    {
+        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+        o << operation << var2 << ", %eax\n";
+    }
+
+    if (var1[0] == '$' && var2[0] != '$')
+    {
+        o << "	movl	" << var1 << ", %eax\n";
+        o << operation << (*variables)[var2] << "(%rbp), %eax\n";
+    }
+
+    if (var1[0] != '$' && var2[0] != '$')
+    {
+        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+        o << operation << (*variables)[var2] << "(%rbp), %eax\n";
+    }
+
+    o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
+}
+
+void compareOperation(ostream & o, string var1, string var2, map<string, int> *variables, string operation){
+    if(var1[0] != '$' && var2[0] == '$'){
+        o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+    }
+
+    if(var1[0] == '$' && var2[0] != '$'){
+        o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+    }
+
+    if(var1[0] != '$' && var2[0] != '$'){
+        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+        o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+    }
+
+    o << operation <<  "%al\n";
+    o << "  andb	$1, %al\n";
+    o << "  movzbl	%al, %eax\n";
+
+}
+
 void IRInstr::gen_asm(ostream & o){
     switch(op){
         case IRInstr::decl:
@@ -40,7 +82,7 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string varTmp = params[1];
-            o << " 	movl	" << (*variables)[varTmp] << "(%rbp), %eax\n";
+            o << "  movl	" << (*variables)[varTmp] << "(%rbp), %eax\n";
             o << "	movl 	%eax, " << (*variables)[var] << "(%rbp)\n";
             break;
         }
@@ -48,88 +90,19 @@ void IRInstr::gen_asm(ostream & o){
 
         case IRInstr::add:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	addl	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %eax\n";
-                o << "	addl	" << var1 << ", %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	addl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    addl  ");
             break;
         }
 
         case IRInstr::sub:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	subl	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << var1 << ", %eax\n";
-                o << "	subl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	subl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    subl   ");
             break;
         }
 
         case IRInstr::mul:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	imull	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << var1 << ", %eax\n";
-                o << "	imull	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	imull	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    imull   ");
             break;
         }
 
@@ -203,188 +176,43 @@ void IRInstr::gen_asm(ostream & o){
 
         case IRInstr::op_and:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	andl	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %eax\n";
-                o << "	andl	" << var1 << ", %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	andl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    andl   ");
             break;
         }
 
         case IRInstr::op_or:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	orl	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %eax\n";
-                o << "	orl	" << var1 << ", %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	orl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    orl   ");
             break;
         }
             
         case IRInstr::op_xor: 
         {
-            string var1 = params[0];
-            string var2 = params[1];
-            string varTmp = params[2];
-
-            if (var1[0] != '$' && var2[0] == '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	xorl	" << var2 << ", %eax\n";
-            }
-
-            if (var1[0] == '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %eax\n";
-                o << "	xorl	" << var1 << ", %eax\n";
-            }
-
-            if (var1[0] != '$' && var2[0] != '$')
-            {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	xorl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
-
+            binaryOperation(o, params[0], params[1], params[2], variables, "    xorl   ");
             break;
         }
 
         case IRInstr::op_sup:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-
-            if(var1[0] != '$' && var2[0] == '$'){
-                o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
-            }
-
-            if(var1[0] == '$' && var2[0] != '$'){
-                o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
-            }
-
-            if(var1[0] != '$' && var2[0] != '$'){
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	setg	"<<  "%al\n";
-            o << "  andb	$1, %al\n";
-            o << "  movzbl	%al, %eax\n";
-
+            compareOperation(o, params[0], params[1], variables, "    setg   ");
             break;
         }
 
         case IRInstr::op_min:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-
-            if(var1[0] != '$' && var2[0] == '$'){
-                o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
-            }
-
-            if(var1[0] == '$' && var2[0] != '$'){
-                o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
-            }
-
-            if(var1[0] != '$' && var2[0] != '$'){
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	setl	"<<  "%al\n";
-            o << "  andb	$1, %al\n";
-            o << "  movzbl	%al, %eax\n";
-
+            compareOperation(o, params[0], params[1], variables, "    setl   ");
             break;
         }
 
         case IRInstr::op_equal:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-
-            if(var1[0] != '$' && var2[0] == '$'){
-                o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
-            }
-
-            if(var1[0] == '$' && var2[0] != '$'){
-                o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
-            }
-
-            if(var1[0] != '$' && var2[0] != '$'){
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	sete	"<<  "%al\n";
-            o << "  andb	$1, %al\n";
-            o << "  movzbl	%al, %eax\n";
-
+            compareOperation(o, params[0], params[1], variables, "    sete   ");
             break;
         }
 
         case IRInstr::op_diff:
         {
-            string var1 = params[0];
-            string var2 = params[1];
-
-            if(var1[0] != '$' && var2[0] == '$'){
-                o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
-            }
-
-            if(var1[0] == '$' && var2[0] != '$'){
-                o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
-            }
-
-            if(var1[0] != '$' && var2[0] != '$'){
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
-            }
-
-            o << "	setne	"<<  "%al\n";
-            o << "  andb	$1, %al\n";
-            o << "  movzbl	%al, %eax\n";
-
+            compareOperation(o, params[0], params[1], variables, "    setne   ");
             break;
         }
         
