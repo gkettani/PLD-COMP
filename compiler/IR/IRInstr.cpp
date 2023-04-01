@@ -133,6 +133,48 @@ void IRInstr::gen_asm(ostream & o){
             break;
         }
 
+        case IRInstr::div:
+        {
+            string var1 = params[0];
+            string var2 = params[1];
+            string varTmp = params[2];
+
+            if (var1[0] != '$' && var2[0] == '$')
+            {
+                if(var2 == "$0")
+                {
+			        std::cerr<< "Error : Division by 0" << endl;
+			        throw "Division by 0";
+                }
+                else
+                {
+                    o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+                    o << " cltd\n";
+                    o << "	idivl	" << var2 << ", %eax\n";
+                }
+            }
+
+            if (var1[0] == '$' && var2[0] != '$')
+            {
+                o << "	movl	" << var1 << ", %eax\n";
+                o << "	movl	" << (*variables)[var2] << "(%rbp), %ebx\n";
+                o << "  cltd\n";
+                o << "	idivl	%ebx, %eax\n";
+            }
+
+            if (var1[0] != '$' && var2[0] != '$')
+            {
+                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+                o << "	movl	" << (*variables)[var2] << "(%rbp), %ebx\n";
+                o << "  cltd\n";
+                o << "	idivl	%ebx, %eax\n";
+            }
+
+            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
+
+            break;
+        }
+
 
         case IRInstr::wmem:
             {

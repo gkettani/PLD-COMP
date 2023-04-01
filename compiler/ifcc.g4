@@ -29,6 +29,7 @@ expr : CONST                      #constExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
      | expr '*' expr              #multExpr 
+     | expr '/' expr              #divExpr
      | expr '-' expr              #minusExpr
      | expr '+' expr              #plusExpr
      | expr COMPAREOP expr        #compareExpr

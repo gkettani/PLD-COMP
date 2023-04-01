@@ -56,7 +56,7 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}else{
 		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
-		var = "$41";
+		var = "$0";
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
 	string temp="";
@@ -66,10 +66,16 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 	for (auto it = unusedvariables.begin(); it != unusedvariables.end(); ++it)
 	{
 		if(it->second == 0){
-			temp += it->first;
+			temp += it->first+",";
 		}
 	}
-	//std::cerr <<temp;
+	//Warning message:unused variables gcc 
+
+	if(temp != ""){
+		std::cerr<<"#warning unused variables: "<<temp<<endl;
+	}
+
+
 
 	return 0;
 }
@@ -344,7 +350,7 @@ antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
 
 	return resultStr;
 }
-
+// multdiv 
 antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
 {
 	string var1 = visit(ctx->expr(0));
@@ -367,6 +373,40 @@ antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
 		variables[varTmp] = offset;
 
 		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
+	}
+
+	return resultStr;
+}
+
+// divexpr taking care of division by 0
+antlrcpp::Any CodeGenVisitor::visitDivExpr(ifccParser::DivExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		if (val2 == 0)
+		{
+			std::cerr<< "Error : Division by 0" << endl;
+			throw "Division by 0";
+		}
+		int result = val1 / val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		varCounter += 1;
+		string varTmp = "!tmp" + varCounter;
+		int offset = varCounter * -4;
+		variables[varTmp] = offset;
+
+		cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
 	}
 
