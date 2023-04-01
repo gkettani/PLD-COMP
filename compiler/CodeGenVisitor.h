@@ -40,7 +40,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		protected:
 			CFG& cfg;
 			map<string, int> variables;
-			map<string, int> unusedvariables;
+			map<string, int> variablesUsageCounter;
 			int varCounter = 0;
 
 };
