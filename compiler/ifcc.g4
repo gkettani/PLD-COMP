@@ -25,18 +25,17 @@ usedvar: VAR
 
 expr : CONST                      #constExpr
      | usedvar                    #varExpr
-     | expr '&' expr              #andExpr
-     | expr '|' expr              #orExpr
-     | expr '^' expr              #xorExpr
-     | expr '>' expr              #sup
-     | expr '<' expr              #min
-     | expr '!=' expr             #diff
-     | expr '==' expr             #equal
+     | '(' expr ')'               #parExpr
      | '-' expr                   #negExpr
      | '!' expr                   #notExpr
-     | expr '+' expr              #plusExpr
+     | expr '*' expr              #multExpr 
      | expr '-' expr              #minusExpr
-     | expr '*' expr              #multExpr
+     | expr '+' expr              #plusExpr
+     | expr COMPAREOP expr        #compareExpr
+     | expr EQUALOP expr          #equalExpr
+     | expr '&' expr              #andExpr
+     | expr '^' expr              #xorExpr
+     | expr '|' expr              #orExpr
      ;
 
 ret : RET expr
@@ -44,6 +43,14 @@ ret : RET expr
     ;
 
 RET: 'return' ;
+
+COMPAREOP: '>'
+| '<'
+;
+
+EQUALOP: '=='
+| '!='
+;
 
 INT : 'int' ;
 CHAR : 'char' ;
