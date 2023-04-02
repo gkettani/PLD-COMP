@@ -28,6 +28,8 @@ The compiler takes a C-program as input and outputs the corresponding x86 ASM co
 - Static checking: each declared variable is used at least once
 - IR architecture (IRInstr, BasicBlock, CFG)
 
+**Clarification**: Our symbol table is a map where the key is the name of the variable. We don't take into account the type (it will be done in the second sprint). Constants can also be stored in our symbol table, we give them a name that starts with a '$'. 
+
 ## Quick description of the code base 
 
 Main components of PLD-COMP base code:
