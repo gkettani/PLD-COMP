@@ -20,6 +20,7 @@ listvar: VAR (',' VAR)*
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
+        
 usedvar: VAR                    
         ;                     
 
