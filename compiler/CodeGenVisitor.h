@@ -39,8 +39,8 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 
 	protected:
 		CFG& cfg;
-		map<string, int> variables;
-		map<string, int> variablesUsageCounter;
+		map<string, pair<string,int>> variables;
+		map<string, pair<string,int>> variablesUsageCounter;
 		int varCounter = 0;
 
 		void addVariable(string name, int size = 4);

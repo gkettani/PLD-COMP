@@ -7,7 +7,7 @@ CodeGenVisitor::~CodeGenVisitor() {}
 void CodeGenVisitor::addVariable(string name, int size)
 {
 	int offset = ++varCounter * -size;
-	variables[name] = offset;
+	variables[name].second = offset;
 }
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
@@ -60,7 +60,7 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 	//iterate over the unused variables and print them
 	for (auto it = variablesUsageCounter.begin(); it != variablesUsageCounter.end(); ++it)
 	{
-		if(it->second == 0){
+		if((it->second).second == 0){
 			temp += it->first+",";
 		}
 	}
@@ -80,6 +80,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
 	{
+		string type= ctx->type()->getText();
 		/*Vérifier d'abord si cette variable a déjà été déclarée
 		Dans ce cas, we throw an error*/
 		if (variables.find(var) != variables.end()) {
@@ -89,7 +90,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		//Sinon, on l'ajoute dans la table des symboles
 		else{
 			addVariable(var);
-			variablesUsageCounter.insert({var,0});
+			variablesUsageCounter.insert({var,{type,0}});
 		}
 	}
 
@@ -112,7 +113,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
 	string var = visit(ctx->usedvar());
-	variablesUsageCounter[var]++;
+	variablesUsageCounter[var].second++;
 	return visit(ctx->usedvar());
 }
 
@@ -404,13 +405,13 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
     token = var.substr(0, pos);
 		varValue = "0";
 		addVariable(token);
-		variablesUsageCounter[token] = 0;//ajout d'une variable non utilisée
+		variablesUsageCounter[token].second = 0;//ajout d'une variable non utilisée
 		cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
     var.erase(0, pos + delimiter.length());
 	}
 	varValue = "0";
 	addVariable(var);
-	variablesUsageCounter[var] = 0;//ajout d'une variable non utilisée
+	variablesUsageCounter[var].second = 0;//ajout d'une variable non utilisée
 	
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
 	return 0;

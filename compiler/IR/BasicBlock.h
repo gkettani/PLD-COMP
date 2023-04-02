@@ -17,7 +17,7 @@ class BasicBlock
         void gen_asm(ostream &o); 
 
         /* Ajoute une instruction à un basic block*/
-        void add_IRInstr(IRInstr::Operation op, vector<string> params, map<string, int> *variables);
+        void add_IRInstr(IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *variables);
         
     protected:
         BasicBlock *exit_true;    /**< pointer to the next basic block, true branch. If nullptr, return from procedure */

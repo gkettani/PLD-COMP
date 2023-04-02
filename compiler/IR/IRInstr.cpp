@@ -5,7 +5,7 @@ class BasicBlock;
 
 using namespace std;
 
-IRInstr::IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, int>* symboleTable) : bb(bb), op(op), params(params), variables(symboleTable) {}
+IRInstr::IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, pair<string,int>>* symboleTable) : bb(bb), op(op), params(params), variables(symboleTable) {}
 
 void IRInstr::binaryOperation(ostream & o, string operation){
     string var1 = params[0];
@@ -14,23 +14,23 @@ void IRInstr::binaryOperation(ostream & o, string operation){
 
     if (var1[0] != '$' && var2[0] == '$')
     {
-        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+        o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
         o << "\t" + operation + "\t" << var2 << ", %eax\n";
     }
 
     if (var1[0] == '$' && var2[0] != '$')
     {
         o << "	movl	" << var1 << ", %eax\n";
-        o << "\t" + operation + "\t" << (*variables)[var2] << "(%rbp), %eax\n";
+        o << "\t" + operation + "\t" << (*variables)[var2].second << "(%rbp), %eax\n";
     }
 
     if (var1[0] != '$' && var2[0] != '$')
     {
-        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-        o << "\t" + operation + "\t" << (*variables)[var2] << "(%rbp), %eax\n";
+        o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
+        o << "\t" + operation + "\t" << (*variables)[var2].second << "(%rbp), %eax\n";
     }
 
-    o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
+    o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 }
 
 void IRInstr::compareOperation(ostream & o, string operation){
@@ -38,16 +38,16 @@ void IRInstr::compareOperation(ostream & o, string operation){
     string var2 = params[1];
 
     if(var1[0] != '$' && var2[0] == '$'){
-        o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
+        o << "	cmpl	" << var2 << ", " << (*variables)[var1].second << "(%rbp)\n";
     }
 
     if(var1[0] == '$' && var2[0] != '$'){
-        o << "	cmpl	" << var1 << ", " << (*variables)[var2] << "(%rbp)\n";
+        o << "	cmpl	" << var1 << ", " << (*variables)[var2].second << "(%rbp)\n";
     }
 
     if(var1[0] != '$' && var2[0] != '$'){
-        o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-        o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
+        o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
+        o << "	cmpl	" << (*variables)[var2].second << "(%rbp), %eax\n";
     }
 
     o << "\t" + operation + "\t" <<  "%al\n";
@@ -62,7 +62,7 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string varValue = params[1];
-            o << " 	movl	$" << varValue << ", " << (*variables)[var] << "(%rbp)\n";
+            o << " 	movl	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
             break;
         }
 
@@ -72,7 +72,7 @@ void IRInstr::gen_asm(ostream & o){
             if (var[0] == '$'){
                 o << " 	movl	" << var << ", %eax\n";
             }else if (var != "%eax"){ 
-                o << " 	movl	" << (*variables)[var] << "(%rbp), %eax\n";
+                o << " 	movl	" << (*variables)[var].second << "(%rbp), %eax\n";
             }
             break;
         }
@@ -81,7 +81,7 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string constStr = params[1];
-            o << " 	movl	" << constStr << ", " << (*variables)[var] << "(%rbp)\n";
+            o << " 	movl	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
             break;
         }
             
@@ -89,8 +89,8 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string varTmp = params[1];
-            o << "  movl	" << (*variables)[varTmp] << "(%rbp), %eax\n";
-            o << "	movl 	%eax, " << (*variables)[var] << "(%rbp)\n";
+            o << "  movl	" << (*variables)[varTmp].second << "(%rbp), %eax\n";
+            o << "	movl 	%eax, " << (*variables)[var].second << "(%rbp)\n";
             break;
         }
             break;
@@ -128,7 +128,7 @@ void IRInstr::gen_asm(ostream & o){
                 }
                 else
                 {
-                    o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
+                    o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
                     o << " cltd\n";
                     o << "	idivl	" << var2 << ", %eax\n";
                 }
@@ -137,20 +137,20 @@ void IRInstr::gen_asm(ostream & o){
             if (var1[0] == '$' && var2[0] != '$')
             {
                 o << "	movl	" << var1 << ", %eax\n";
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %ebx\n";
+                o << "	movl	" << (*variables)[var2].second << "(%rbp), %ebx\n";
                 o << "  cltd\n";
                 o << "	idivl	%ebx, %eax\n";
             }
 
             if (var1[0] != '$' && var2[0] != '$')
             {
-                o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-                o << "	movl	" << (*variables)[var2] << "(%rbp), %ebx\n";
+                o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
+                o << "	movl	" << (*variables)[var2].second << "(%rbp), %ebx\n";
                 o << "  cltd\n";
                 o << "	idivl	%ebx, %eax\n";
             }
 
-            o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
+            o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 
             break;
         }
@@ -162,7 +162,7 @@ void IRInstr::gen_asm(ostream & o){
             string value = params[2];
 
             //change the value of the variable
-            o << "	movl	"<<value<<", " << (*variables)[var] << "(%rbp)\n";
+            o << "	movl	"<<value<<", " << (*variables)[var].second << "(%rbp)\n";
             break;
         }
 
@@ -227,7 +227,7 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
 
-            o << "	movl	" << (*variables)[var] << "(%rbp), %eax\n";
+            o << "	movl	" << (*variables)[var].second << "(%rbp), %eax\n";
             o << "    negl	%eax\n";
 
             break;
@@ -237,7 +237,7 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
 
-            o << "  cmpl	$0, "<<(*variables)[var]<<"(%rbp)\n";
+            o << "  cmpl	$0, "<<(*variables)[var].second<<"(%rbp)\n";
             o << "  sete  %al\n";
             o << "  movzbl	%al, %eax\n";
             
