@@ -9,7 +9,7 @@ The compiler takes a C-program as input and outputs the corresponding x86 ASM co
 ## List of features supported by our compiler ifcc
 
 - Comments and preprocessor directives are ignored 
-- 32 bits char and int data type can be used 
+- 32 bits int data type can be used 
 - Return instruction
 - Variable declaration
 - Multiple variable declaration
@@ -23,7 +23,6 @@ The compiler takes a C-program as input and outputs the corresponding x86 ASM co
 - Expressions (multiple variables or constants combined with operators)
 - Order of operations, operators associativity
 - Parentheses around expression  
-- Static checking: each used variable has been previously declared
 - Static checking: the same variable (same type and same name) can not be declared multiple times
 - Static checking: each declared variable is used at least once
 - IR architecture (IRInstr, BasicBlock, CFG)
