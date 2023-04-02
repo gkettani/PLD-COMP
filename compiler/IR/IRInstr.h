@@ -42,6 +42,10 @@ class IRInstr{
 
         /* Génère le code assembleur x86 de l'instruction IR*/
         void gen_asm(ostream &o);
+        /* Génère le code assembleur x86 d'une opération binaire*/
+        void binaryOperation(ostream &o, string operation);
+        /* Génère le code assembleur x86 d'une opération de comparaison*/
+        void compareOperation(ostream &o, string operation);
 
     private:
         BasicBlock *bb;        /** < BasicBlock auquel l'instruction IR appartient */

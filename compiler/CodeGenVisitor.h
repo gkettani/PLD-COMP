@@ -31,17 +31,19 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitPlusExpr(ifccParser::PlusExprContext *ctx) override;
 		virtual antlrcpp::Any visitMinusExpr(ifccParser::MinusExprContext *ctx) override;
 		virtual antlrcpp::Any visitCompareExpr(ifccParser::CompareExprContext *context) override;
-    	virtual antlrcpp::Any visitEqualExpr(ifccParser::EqualExprContext *context) override;
+		virtual antlrcpp::Any visitEqualExpr(ifccParser::EqualExprContext *context) override;
 		virtual antlrcpp::Any visitListvar(ifccParser::ListvarContext *ctx) override;
 		virtual antlrcpp::Any visitUsedvar(ifccParser::UsedvarContext *context) override;
-    	virtual antlrcpp::Any visitDivExpr(ifccParser::DivExprContext *context) override;
+		virtual antlrcpp::Any visitDivExpr(ifccParser::DivExprContext *context) override;
 
 
-		protected:
-			CFG& cfg;
-			map<string, int> variables;
-			map<string, int> variablesUsageCounter;
-			int varCounter = 0;
+	protected:
+		CFG& cfg;
+		map<string, int> variables;
+		map<string, int> variablesUsageCounter;
+		int varCounter = 0;
+
+		void addVariable(string name, int size = 4);
 
 };
 
