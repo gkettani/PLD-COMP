@@ -7,29 +7,36 @@ using namespace std;
 
 IRInstr::IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, int>* symboleTable) : bb(bb), op(op), params(params), variables(symboleTable) {}
 
-void binaryOperation(ostream & o, string var1, string var2, string varTmp, map<string, int> *variables, string operation){
+void IRInstr::binaryOperation(ostream & o, string operation){
+    string var1 = params[0];
+    string var2 = params[1];
+    string varTmp = params[2];
+
     if (var1[0] != '$' && var2[0] == '$')
     {
         o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-        o << operation << var2 << ", %eax\n";
+        o << "\t" + operation + "\t" << var2 << ", %eax\n";
     }
 
     if (var1[0] == '$' && var2[0] != '$')
     {
         o << "	movl	" << var1 << ", %eax\n";
-        o << operation << (*variables)[var2] << "(%rbp), %eax\n";
+        o << "\t" + operation + "\t" << (*variables)[var2] << "(%rbp), %eax\n";
     }
 
     if (var1[0] != '$' && var2[0] != '$')
     {
         o << "	movl	" << (*variables)[var1] << "(%rbp), %eax\n";
-        o << operation << (*variables)[var2] << "(%rbp), %eax\n";
+        o << "\t" + operation + "\t" << (*variables)[var2] << "(%rbp), %eax\n";
     }
 
     o << "	movl	%eax, " << (*variables)[varTmp] << "(%rbp)\n";
 }
 
-void compareOperation(ostream & o, string var1, string var2, map<string, int> *variables, string operation){
+void IRInstr::compareOperation(ostream & o, string operation){
+    string var1 = params[0];
+    string var2 = params[1];
+
     if(var1[0] != '$' && var2[0] == '$'){
         o << "	cmpl	" << var2 << ", " << (*variables)[var1] << "(%rbp)\n";
     }
@@ -43,7 +50,7 @@ void compareOperation(ostream & o, string var1, string var2, map<string, int> *v
         o << "	cmpl	" << (*variables)[var2] << "(%rbp), %eax\n";
     }
 
-    o << operation <<  "%al\n";
+    o << "\t" + operation + "\t" <<  "%al\n";
     o << "  andb	$1, %al\n";
     o << "  movzbl	%al, %eax\n";
 
@@ -90,19 +97,19 @@ void IRInstr::gen_asm(ostream & o){
 
         case IRInstr::add:
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    addl  ");
+            binaryOperation(o, "addl");
             break;
         }
 
         case IRInstr::sub:
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    subl   ");
+            binaryOperation(o, "subl");
             break;
         }
 
         case IRInstr::mul:
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    imull   ");
+            binaryOperation(o, "imull");
             break;
         }
 
@@ -148,17 +155,17 @@ void IRInstr::gen_asm(ostream & o){
             break;
         }
 
-
         case IRInstr::wmem:
-            {
-                string var = params[0];
-                string offset = params[1];
-                string value = params[2];
+        {
+            string var = params[0];
+            string offset = params[1];
+            string value = params[2];
 
-               //change the value of the variable
-                o << "	movl	"<<value<<", " << (*variables)[var] << "(%rbp)\n";
-                break;
-            }
+            //change the value of the variable
+            o << "	movl	"<<value<<", " << (*variables)[var] << "(%rbp)\n";
+            break;
+        }
+
         case IRInstr::rmem:
             break;
 
@@ -176,46 +183,45 @@ void IRInstr::gen_asm(ostream & o){
 
         case IRInstr::op_and:
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    andl   ");
+            binaryOperation(o, "andl");
             break;
         }
 
         case IRInstr::op_or:
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    orl   ");
+            binaryOperation(o, "orl");
             break;
         }
             
         case IRInstr::op_xor: 
         {
-            binaryOperation(o, params[0], params[1], params[2], variables, "    xorl   ");
+            binaryOperation(o, "xorl");
             break;
         }
 
         case IRInstr::op_sup:
         {
-            compareOperation(o, params[0], params[1], variables, "    setg   ");
+            compareOperation(o, "setg");
             break;
         }
 
         case IRInstr::op_min:
         {
-            compareOperation(o, params[0], params[1], variables, "    setl   ");
+            compareOperation(o, "setl");
             break;
         }
 
         case IRInstr::op_equal:
         {
-            compareOperation(o, params[0], params[1], variables, "    sete   ");
+            compareOperation(o, "sete");
             break;
         }
 
         case IRInstr::op_diff:
         {
-            compareOperation(o, params[0], params[1], variables, "    setne   ");
+            compareOperation(o, "setne");
             break;
         }
-        
 
         case IRInstr::op_neg: 
         {
@@ -226,6 +232,7 @@ void IRInstr::gen_asm(ostream & o){
 
             break;
         }
+
         case IRInstr::op_not: 
         {
             string var = params[0];

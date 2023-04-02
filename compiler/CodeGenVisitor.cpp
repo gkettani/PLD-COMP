@@ -4,6 +4,12 @@ using namespace std;
 CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
 CodeGenVisitor::~CodeGenVisitor() {}
 
+void CodeGenVisitor::addVariable(string name, int size)
+{
+	int offset = ++varCounter * -size;
+	variables[name] = offset;
+}
+
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {	
 	visitChildren(ctx);
@@ -82,9 +88,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		}
 		//Sinon, on l'ajoute dans la table des symboles
 		else{
-			varCounter += 1;
-			int offset = varCounter * -4;
-			variables[var] = offset;
+			addVariable(var);
 			variablesUsageCounter.insert({var,0});
 		}
 	}
@@ -143,10 +147,8 @@ antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
 	else
 	{
 		// Si les opérandes ne sont pas toutes les deux des constantes, il faut construire des instructions assembleurs en plus
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -173,10 +175,8 @@ antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -203,10 +203,8 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 		
 		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -298,10 +296,8 @@ antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -326,10 +322,8 @@ antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -354,10 +348,8 @@ antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -388,10 +380,8 @@ antlrcpp::Any CodeGenVisitor::visitDivExpr(ifccParser::DivExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -413,17 +403,13 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	while ((pos = var.find(delimiter)) != string::npos) {
     token = var.substr(0, pos);
 		varValue = "0";
-		varCounter += 1;
-		int offset = varCounter * -4;
-		variables[token] = offset;
+		addVariable(token);
 		variablesUsageCounter[token] = 0;//ajout d'une variable non utilisée
 		cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
     var.erase(0, pos + delimiter.length());
 	}
 	varValue = "0";
-	varCounter += 1;
-	int offset = varCounter * -4;
-	variables[var] = offset;
+	addVariable(var);
 	variablesUsageCounter[var] = 0;//ajout d'une variable non utilisée
 	
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
