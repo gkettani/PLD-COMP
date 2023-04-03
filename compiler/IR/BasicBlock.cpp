@@ -19,7 +19,7 @@ void BasicBlock::gen_asm(ostream &o){
     }
 }
 
-void BasicBlock::add_IRInstr(IRInstr::Operation op, vector<string> params, map<string, int> *variables){
+void BasicBlock::add_IRInstr(IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *variables){
     IRInstr* instr = new IRInstr(this, op, params, variables);
     instrs.push_back(instr);
 }
