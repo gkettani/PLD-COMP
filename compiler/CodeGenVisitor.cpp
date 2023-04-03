@@ -100,19 +100,20 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}
-	else
-	{
-		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
-	}
-    //le character commence par des "@""
-    if(varTmp[0] == '@'){
+    //le character commence par des "@"
+    else if(varTmp[0] == '@'){
         int firstChar = varTmp.at(2);
 	    int alp = firstChar;
 	    stringstream ss;
 	    ss << alp;
 	    string str = ss.str();
         cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
-    }
+        }
+	    else
+	    {
+		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+	    }
+    
 
 	return 0;
 }
