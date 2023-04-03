@@ -43,7 +43,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		map<string, pair<string,int>> variablesUsageCounter;
 		int varCounter = 0;
 
-		void addVariable(string name, int size = 4);
+		void addVariable(string name,string type = "int", int size = 4);
 
 };
 
