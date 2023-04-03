@@ -44,6 +44,9 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		int varCounter = 0;
 
 		void addVariable(string name, int size = 4);
+		bool doesExist(string var);
+		bool isVariable(string var);
+		void checkDeclaredExpr(string var1, string var2);
 
 };
 
