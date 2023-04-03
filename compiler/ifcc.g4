@@ -38,6 +38,7 @@ expr : CONST                      #constExpr
      | expr '&' expr              #andExpr
      | expr '^' expr              #xorExpr
      | expr '|' expr              #orExpr
+     | ABCD                       #alphabets
      ;
 
 ret : RET expr
@@ -61,3 +62,4 @@ CONST : [0-9]+ ;
 COMMENT : '/*' .*? '*/' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;
 WS    : [ \t\r\n] -> channel(HIDDEN);
+ABCD :  '\''[0-9a-zA-Z]'\'';
