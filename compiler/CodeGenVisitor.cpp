@@ -95,7 +95,6 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-
 	
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
@@ -105,6 +104,15 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	{
 		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
 	}
+    //le character commence par des "@""
+    if(varTmp[0] == '@'){
+        int firstChar = varTmp.at(2);
+	    int alp = firstChar;
+	    stringstream ss;
+	    ss << alp;
+	    string str = ss.str();
+        cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
+    }
 
 	return 0;
 }
@@ -418,5 +426,10 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 
 antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *context) {
 	string var = context->VAR()->getText();
+	return var;
+};
+
+antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) {
+	string var = "@" + ctx->ABCD()->getText();
 	return var;
 };
