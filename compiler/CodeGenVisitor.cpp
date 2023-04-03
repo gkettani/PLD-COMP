@@ -107,6 +107,8 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	    stringstream ss;
 	    ss << alp;
 	    string str = ss.str();
+        char c = '$';
+        str.insert(0, 1, c);
         cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
         }
 	    else
