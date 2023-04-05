@@ -530,3 +530,31 @@ antlrcpp::Any CodeGenVisitor::visitIncrdecrExpr(ifccParser::IncrdecrExprContext 
 	string var = visit(ctx->incrdecr());
 	return var;
 }
+
+antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::add, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::sub, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}

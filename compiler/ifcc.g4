@@ -9,6 +9,8 @@ type : INT | CHAR ;
 instruction : declare ';'
             | incrdecr ';'
             | affectation ';'
+            | addAffect ';'
+            | subAffect ';'
             | ret ';'           
             ;
 
@@ -23,6 +25,11 @@ incrdecr: incrdecrop VAR;
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
+
+addAffect: VAR '+=' expr;
+
+subAffect: VAR '-=' expr;
+
 
 usedvar: VAR                    
         ;                     
