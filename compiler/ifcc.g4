@@ -28,10 +28,8 @@ expr : CONST                      #constExpr
      | usedvar                    #varExpr
      | '(' expr ')'               #parExpr
      | unaryop expr               #unaryExpr
-     | expr '*' expr              #multExpr 
-     | expr '/' expr              #divExpr
-     | expr '-' expr              #minusExpr
-     | expr '+' expr              #plusExpr
+     | expr multdivop expr        #multDivExpr
+     | expr addsubop expr         #addSubExpr   
      | expr COMPAREOP expr        #compareExpr
      | expr EQUALOP expr          #equalExpr
      | expr '&' expr              #andExpr
@@ -49,6 +47,10 @@ ret : RET VAR                     #retVar
 RET: 'return' ;
 
 unaryop:  '-' | '!';
+
+addsubop: '-' | '+';
+
+multdivop: '*' | '/';
 
 COMPAREOP: '>'
 | '<'
