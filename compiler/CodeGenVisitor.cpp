@@ -510,3 +510,59 @@ antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) 
 	string var = "@" + ctx->ABCD()->getText();
 	return var;
 };
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
+{
+	// TODO: indiquer que la variable est utilisée
+	string var = ctx->VAR()->getText();
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	string op = ctx->incrdecrop()->getText();
+
+	if (op == "++")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::add, {var, "$1", varTmp}, &variables);
+	}
+	else if (op == "--")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::sub, {var, "$1", varTmp}, &variables);
+	}
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecrExpr(ifccParser::IncrdecrExprContext *ctx)
+{
+	string var = visit(ctx->incrdecr());
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::add, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::sub, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
