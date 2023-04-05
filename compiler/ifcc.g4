@@ -7,8 +7,9 @@ prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 type : INT | CHAR ;
 
 instruction : declare ';'
+            | incrdecr ';'
             | affectation ';'
-            | ret ';'            
+            | ret ';'           
             ;
 
 declare: type listvar 
@@ -17,10 +18,12 @@ declare: type listvar
 listvar: VAR (',' VAR)*
         ;
 
+incrdecr: incrdecrop VAR;
+
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
-        
+
 usedvar: VAR                    
         ;                     
 
@@ -28,6 +31,7 @@ expr : CONST                      #constExpr
      | usedvar                    #varExpr
      | '(' expr ')'               #parExpr
      | unaryop expr               #unaryExpr
+     | incrdecr                   #incrdecrExpr
      | expr multdivop expr        #multDivExpr
      | expr addsubop expr         #addSubExpr   
      | expr COMPAREOP expr        #compareExpr
@@ -51,6 +55,8 @@ unaryop:  '-' | '!';
 addsubop: '-' | '+';
 
 multdivop: '*' | '/';
+
+incrdecrop: '++' | '--';
 
 COMPAREOP: '>'
 | '<'

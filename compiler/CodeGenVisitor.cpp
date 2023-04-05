@@ -502,3 +502,31 @@ antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) 
 	string var = "@" + ctx->ABCD()->getText();
 	return var;
 };
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
+{
+	// TODO: indiquer que la variable est utilisée
+	string var = ctx->VAR()->getText();
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	string op = ctx->incrdecrop()->getText();
+
+	if (op == "++")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::add, {var, "$1", varTmp}, &variables);
+	}
+	else if (op == "--")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::sub, {var, "$1", varTmp}, &variables);
+	}
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecrExpr(ifccParser::IncrdecrExprContext *ctx)
+{
+	string var = visit(ctx->incrdecr());
+	return var;
+}

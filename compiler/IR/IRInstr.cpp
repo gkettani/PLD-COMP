@@ -89,6 +89,7 @@ void IRInstr::gen_asm(ostream & o){
             
         case IRInstr::copy:
         {
+            /** Copy param[1]'s value into  param[0]*/
             string var = params[0];
             string varTmp = params[1];
             string type = (*variables)[var].first;
