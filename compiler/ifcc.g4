@@ -40,8 +40,10 @@ expr : CONST                      #constExpr
      | ABCD                       #alphabets
      ;
 
-ret : RET expr
-    | RET
+ret : RET VAR                     #retVar
+    | RET CONST                   #retConst
+    | RET expr                    #retExpr
+    | RET                         #retNothing
     ;
 
 RET: 'return' ;
