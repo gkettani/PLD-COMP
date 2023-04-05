@@ -69,6 +69,7 @@ void IRInstr::gen_asm(ostream & o){
         case IRInstr::ret:
         {
             string var = params[0];
+ 
             if (var[0] == '$'){
                 o << " 	movl	" << var << ", %eax\n";
             }else if (var != "%eax"){
@@ -83,19 +84,28 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string constStr = params[1];
-            o << " 	movl	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
+            string type = (*variables)[var].first;
+            if(type=="char")
+            {
+                o << " 	movb	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
+            }
+            else{
+                o << " 	movl	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
+            }
             break;
         }
             
         case IRInstr::copy:
         {
+            /** Copy param[1]'s value into  param[0]*/
             string var = params[0];
             string varTmp = params[1];
             string type = (*variables)[var].first;
             cout<<"#"<<varTmp<<endl;
             if(type=="char")
             {
-                o << "    movb    $"<<int(varTmp[0])<<", "<<(*variables)[var].second<< "(%rbp)\n";
+                o << "    movzbl    "<<(*variables)[varTmp].second<< "(%rbp), %eax\n";
+                o << "    movb      %al, "<<(*variables)[var].second<<"(%rbp)\n";
             }
             else
             {
