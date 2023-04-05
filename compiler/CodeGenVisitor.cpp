@@ -102,7 +102,8 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-	
+	cout<<"#var :"<<var<<endl;
+	cout<<"#varTmp : "<<varTmp<<endl;
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
