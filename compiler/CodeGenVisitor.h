@@ -48,7 +48,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		bool doesExist(string var);
 		bool isVariable(string var);
 		void checkDeclaredExpr(string var1, string var2);
-		string convertCharToInt(string var);
+    string convertCharToInt(string var);
 
 };
 

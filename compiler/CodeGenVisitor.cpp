@@ -350,7 +350,6 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 
 antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 	string var =visit(ctx->expr());
-
 	/*Si la variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	if(isVariable(var) && !doesExist(var)){
 		std::cerr << "Error: variable '" << var << "' undefined\n";
