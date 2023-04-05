@@ -377,7 +377,7 @@ antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx)
 {
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
@@ -391,100 +391,14 @@ antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
 	{
 		int val1 = stoi(var1.substr(1));
 		int val2 = stoi(var2.substr(1));
-		int result = val1 + val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		string varTmp = "!tmp" + varCounter;
-		addVariable(varTmp);
-
-		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-
-antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
-	checkDeclaredExpr(var1, var2);
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		int result = val1 - val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		string varTmp = "!tmp" + varCounter;
-		addVariable(varTmp);
-
-		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-// multdiv 
-antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
-	checkDeclaredExpr(var1, var2);
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		int result = val1 * val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		string varTmp = "!tmp" + varCounter;
-		addVariable(varTmp);
-
-		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-
-// divexpr taking care of division by 0
-antlrcpp::Any CodeGenVisitor::visitDivExpr(ifccParser::DivExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
-	checkDeclaredExpr(var1, var2);
-	
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		if (val2 == 0)
-		{
-			cerr<< "Error : Division by 0" << endl;
-			throw "Division by 0";
+		int result;
+		if(ctx->addsubop()->getText() == "+"){
+			result = val1 + val2;
 		}
-		int result = val1 / val2;
+		else if(ctx->addsubop()->getText() == "-")
+		{
+			result = val1 - val2;
+		}
 		resultStr = "$" + to_string(result);
 	}
 	else
@@ -492,7 +406,60 @@ antlrcpp::Any CodeGenVisitor::visitDivExpr(ifccParser::DivExprContext *ctx)
 		string varTmp = "!tmp" + varCounter;
 		addVariable(varTmp);
 
-		cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
+		if(ctx->addsubop()->getText() == "+"){
+			cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
+		}
+		else if(ctx->addsubop()->getText() == "-")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
+		}
+		resultStr = varTmp;
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		int result;
+		if(ctx->multdivop()->getText() == "*"){
+			result = val1 * val2;
+		}
+		else if(ctx->multdivop()->getText() == "/")
+		{
+			if (val2 == 0)
+			{
+				cerr<< "Error : Division by 0" << endl;
+				throw "Division by 0";
+			}
+			result = val1 / val2;
+		}
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
+		if(ctx->multdivop()->getText() == "*"){
+			cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
+		}
+		else if(ctx->multdivop()->getText() == "/")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
+		}
 		resultStr = varTmp;
 	}
 
