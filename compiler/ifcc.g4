@@ -27,8 +27,7 @@ usedvar: VAR
 expr : CONST                      #constExpr
      | usedvar                    #varExpr
      | '(' expr ')'               #parExpr
-     | '-' expr                   #negExpr
-     | '!' expr                   #notExpr
+     | unaryop expr               #unaryExpr
      | expr '*' expr              #multExpr 
      | expr '/' expr              #divExpr
      | expr '-' expr              #minusExpr
@@ -46,6 +45,8 @@ ret : RET expr
     ;
 
 RET: 'return' ;
+
+unaryop:  '-' | '!';
 
 COMPAREOP: '>'
 | '<'

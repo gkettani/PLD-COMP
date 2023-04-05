@@ -260,7 +260,7 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	
 	return resultStr;
 }
-
+/*
 antlrcpp::Any CodeGenVisitor::visitNegExpr(ifccParser::NegExprContext *ctx)
 {
 	string var =visit(ctx->expr());
@@ -293,6 +293,38 @@ antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
 		cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
 		resultStr = "%eax";
 	}
+	return resultStr;
+}
+*/
+
+antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
+	string var =visit(ctx->expr());
+
+	string resultStr = "";
+	if(var[0] == '$' ) {
+		int val = stoi(ctx->expr()->getText());
+		int result;
+		if(ctx->unaryop()->getText() == "!"){
+			result = ! val;
+		}
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			result = -val;
+		}
+		resultStr = "$" + to_string(result);
+
+	}else{
+		if(ctx->unaryop()->getText() == "!"){
+			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+		}
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+		}
+
+		resultStr = "%eax";
+	}
+
 	return resultStr;
 }
 
