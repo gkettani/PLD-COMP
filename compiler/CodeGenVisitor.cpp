@@ -129,6 +129,7 @@ antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
 }
 antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
 	string var = visit(ctx->expr()).as<string>();
+	var = convertCharToInt(var);
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	return 0;
 }
