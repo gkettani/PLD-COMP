@@ -69,6 +69,7 @@ void IRInstr::gen_asm(ostream & o){
         case IRInstr::ret:
         {
             string var = params[0];
+ 
             if (var[0] == '$'){
                 o << " 	movl	" << var << ", %eax\n";
             }else if (var != "%eax"){

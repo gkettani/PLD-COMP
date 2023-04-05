@@ -12,6 +12,21 @@ void CodeGenVisitor::addVariable(string name,string type, int size)
 
 }
 
+string CodeGenVisitor::convertCharToInt(string var)
+{
+	if(var[0] == '@'){
+		int firstChar = var.at(2);
+		int alp = firstChar;
+		stringstream ss;
+		ss << alp;
+		string str = ss.str();
+		char c = '$';
+		str.insert(0, 1, c);
+		return str;
+	}
+	return var;
+}
+
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {	
 	visitChildren(ctx);
@@ -54,7 +69,9 @@ antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
 	string varType = "";
 	if(ctx->expr()){
 		var = visit(ctx->expr()).as<string>();
-		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+		/*On verifie si on return une constante de type char et on la convertit en int (valeur ASCII)*/
+		string str = convertCharToInt(var);
+		cfg.current_bb->add_IRInstr(IRInstr::ret, {str}, &variables);
 	}else{
 		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
 		var = "$0";
@@ -102,26 +119,18 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-	cout<<"#var :"<<var<<endl;
-	cout<<"#varTmp : "<<varTmp<<endl;
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
-	}
-	//le character commence par des "@"
-	else if(varTmp[0] == '@'){
-		int firstChar = varTmp.at(2);
-		int alp = firstChar;
-		stringstream ss;
-		ss << alp;
-		string str = ss.str();
-		char c = '$';
-		str.insert(0, 1, c);
+	}else
+	{
+		string str = convertCharToInt(varTmp);
+		if(str==varTmp){
+			cfg.current_bb->add_IRInstr(IRInstr::copy, {var, str}, &variables);
+			return 0;
+		}
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
 	}
-	else{
-		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
-	}  
 
 	return 0;
 }
@@ -261,42 +270,6 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	
 	return resultStr;
 }
-/*
-antlrcpp::Any CodeGenVisitor::visitNegExpr(ifccParser::NegExprContext *ctx)
-{
-	string var =visit(ctx->expr());
-
-	string resultStr = "";
-
-	if(var[0] == '$' ) {
-		int val = stoi(ctx->expr()->getText());
-		int result = - val;
-		resultStr = "$" + to_string(result);
-
-	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
-		resultStr = "%eax";
-	}
-	return resultStr;
-}
-antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
-{
-	string var =visit(ctx->expr());
-
-	string resultStr = "";
-
-	if(var[0] == '$' ) {
-		int val = stoi(ctx->expr()->getText());
-		int result = ! val;
-		resultStr = "$" + to_string(result);
-
-	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
-		resultStr = "%eax";
-	}
-	return resultStr;
-}
-*/
 
 antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 	string var =visit(ctx->expr());

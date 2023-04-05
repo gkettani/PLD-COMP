@@ -44,6 +44,7 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		int varCounter = 0;
 
 		void addVariable(string name,string type = "int", int size = 4);
+		string convertCharToInt(string var);
 
 };
 
