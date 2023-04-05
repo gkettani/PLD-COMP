@@ -35,7 +35,8 @@ build/%.o: generated/%.cpp
 	$(CC) $(CCFLAGS) -MMD -o $@ $< 
 
 # automagic dependency management: `gcc -MMD` generates all the .d files for us
--include build/*.d
+-include build/*.d 
+build/%.d:
 
 ##########################################
 # generate the C++ implementation of our Lexer/Parser/Visitor
