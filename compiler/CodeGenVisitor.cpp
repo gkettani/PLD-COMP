@@ -4,10 +4,11 @@ using namespace std;
 CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
 CodeGenVisitor::~CodeGenVisitor() {}
 
-void CodeGenVisitor::addVariable(string name, int size)
+void CodeGenVisitor::addVariable(string name,string type, int size)
 {
+	variables[name].first = type;
 	int offset = ++varCounter * -size;
-	variables[name] = offset;
+	variables[name].second = offset;
 }
 
 bool CodeGenVisitor::doesExist(string var){
@@ -71,7 +72,11 @@ antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 		throw "Error duplicate variable declaration";
 	}
 
-	visit(ctx->listvar());
+	string type = ctx->type()->getText();
+	set<string> values = visit(ctx->listvar());
+	for (auto var : values) {
+       addVariable(var, type);
+    }
 	return 0;
 }
 
@@ -90,7 +95,7 @@ antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
 	//iterate over the unused variables and print them
 	for (auto it = variablesUsageCounter.begin(); it != variablesUsageCounter.end(); ++it)
 	{
-		if(it->second == 0){
+		if((it->second).second == 0){
 			temp += it->first+",";
 		}
 	}
@@ -123,10 +128,11 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 {
 
 	string var = ctx->VAR()->getText();
-	
+
 	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
 	{
+		string type= ctx->type()->getText();
 		/*Vérifier d'abord si cette variable a déjà été déclarée
 		Dans ce cas, we throw an error*/
 		if (variables.find(var) != variables.end()) {
@@ -135,8 +141,8 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		}
 		//Sinon, on l'ajoute dans la table des symboles
 		else{
-			addVariable(var);
-			variablesUsageCounter.insert({var,0});
+			addVariable(var, type);
+			variablesUsageCounter.insert({var,{type,0}});
 		}
 	}
 
@@ -151,16 +157,25 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-
 	
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}
-	else
-	{
-		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+	//le character commence par des "@"
+	else if(varTmp[0] == '@'){
+		int firstChar = varTmp.at(2);
+		int alp = firstChar;
+		stringstream ss;
+		ss << alp;
+		string str = ss.str();
+		char c = '$';
+		str.insert(0, 1, c);
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
 	}
+	else{
+		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+	}  
 
 	return 0;
 }
@@ -168,7 +183,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
 	string var = visit(ctx->usedvar());
-	variablesUsageCounter[var]++;
+	variablesUsageCounter[var].second++;
 	return visit(ctx->usedvar());
 }
 
@@ -324,7 +339,7 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	
 	return resultStr;
 }
-
+/*
 antlrcpp::Any CodeGenVisitor::visitNegExpr(ifccParser::NegExprContext *ctx)
 {
 	string var =visit(ctx->expr());
@@ -369,6 +384,38 @@ antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
 		cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
 		resultStr = "%eax";
 	}
+	return resultStr;
+}
+*/
+
+antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
+	string var =visit(ctx->expr());
+
+	string resultStr = "";
+	if(var[0] == '$' ) {
+		int val = stoi(ctx->expr()->getText());
+		int result;
+		if(ctx->unaryop()->getText() == "!"){
+			result = ! val;
+		}
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			result = -val;
+		}
+		resultStr = "$" + to_string(result);
+
+	}else{
+		if(ctx->unaryop()->getText() == "!"){
+			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+		}
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+		}
+
+		resultStr = "%eax";
+	}
+
 	return resultStr;
 }
 
@@ -502,25 +549,31 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	string varValue;
 	size_t pos = 0;
 	string token;
-
+	set<string> values;
+	
 	//split la liste des variables
 	while ((pos = var.find(delimiter)) != string::npos) {
-    token = var.substr(0, pos);
+    	token = var.substr(0, pos);
 		varValue = "0";
-		addVariable(token);
-		variablesUsageCounter[token] = 0;//ajout d'une variable non utilisée
+		values.insert(token);
+		variablesUsageCounter[token].second = 0;//ajout d'une variable non utilisée
 		cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
-    var.erase(0, pos + delimiter.length());
+    	var.erase(0, pos + delimiter.length());
 	}
 	varValue = "0";
-	addVariable(var);
-	variablesUsageCounter[var] = 0;//ajout d'une variable non utilisée
+	values.insert(var);
+	variablesUsageCounter[var].second = 0;//ajout d'une variable non utilisée
 	
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
-	return 0;
+	return values;
 }
 
 antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *context) {
 	string var = context->VAR()->getText();
+	return var;
+};
+
+antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) {
+	string var = "@" + ctx->ABCD()->getText();
 	return var;
 };
