@@ -1,4 +1,5 @@
 #include "CodeGenVisitor.h"
+#include <cstring>
 using namespace std;
 
 CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
@@ -7,6 +8,15 @@ CodeGenVisitor::~CodeGenVisitor() {}
 void CodeGenVisitor::addVariable(string name,string type, int size)
 {
 	variables[name].first = type;
+	const char* typec = type.c_str();
+	if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		size = 4;
+	}else if(strcmp(typec,"char")==0) {
+		size = 1;
+	}else if(strcmp(typec,"double")){
+		size= 8;
+	}
+	
 	int offset = ++varCounter * -size;
 	variables[name].second = offset;
 }
