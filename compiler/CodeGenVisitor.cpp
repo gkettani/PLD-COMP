@@ -29,9 +29,6 @@ bool CodeGenVisitor::doesExist(string var){
 }
 
 bool CodeGenVisitor::isVariable(string var){
-	if (var == "%eax"){
-		return false;
-	}
 	if (var.substr(0, 1) == "$"){
 		return false;
 	}
@@ -137,6 +134,7 @@ antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
 	string var = visit(ctx->expr()).as<string>();
 	var = convertCharToInt(var);
@@ -184,7 +182,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
-	if(varTmp[0] == '$' | varTmp == "%eax"){
+	if(varTmp[0] == '$'){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}else
 	{
@@ -327,15 +325,18 @@ antlrcpp::Any CodeGenVisitor::visitCompareExpr(ifccParser::CompareExprContext *c
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
 	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	checkDeclaredExpr(var1, var2);
 
 	if(ctx->COMPAREOP()->getText() == ">"){
-		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2, varTmp}, &variables);
 	}if(ctx->COMPAREOP()->getText() == "<"){
-		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2, varTmp}, &variables);
 	}
-	resultStr = "%eax";
+	resultStr = varTmp;
 	
 	return resultStr;
 }
@@ -346,21 +347,24 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
 	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	checkDeclaredExpr(var1, var2);
 
 	if(ctx->EQUALOP()->getText() == "=="){
-		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2, varTmp}, &variables);
 	}if(ctx->EQUALOP()->getText() == "!="){
-		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2, varTmp}, &variables);
 	}
-	resultStr = "%eax";
+	resultStr = varTmp;
 	
 	return resultStr;
 }
 
 antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
-	string var =visit(ctx->expr());
+	string var = visit(ctx->expr());
 	/*Si la variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	if(isVariable(var) && !doesExist(var)){
 		std::cerr << "Error: variable '" << var << "' undefined\n";
@@ -369,10 +373,10 @@ antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 
 	string resultStr = "";
 	if(var[0] == '$' ) {
-		int val = stoi(ctx->expr()->getText());
+		int val = stoi(var.substr(1));
 		int result;
 		if(ctx->unaryop()->getText() == "!"){
-			result = ! val;
+			result = !val;
 		}
 		else if(ctx->unaryop()->getText() == "-")
 		{
@@ -381,15 +385,18 @@ antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 		resultStr = "$" + to_string(result);
 
 	}else{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
 		if(ctx->unaryop()->getText() == "!"){
-			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var, varTmp}, &variables);
 		}
 		else if(ctx->unaryop()->getText() == "-")
 		{
-			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var, varTmp}, &variables);
 		}
 
-		resultStr = "%eax";
+		resultStr = varTmp;
 	}
 
 	return resultStr;

@@ -30,12 +30,14 @@ void IRInstr::binaryOperation(ostream & o, string operation){
         o << "\t" + operation + "\t" << (*variables)[var2].second << "(%rbp), %eax\n";
     }
 
+    // On stocke le résultat de l'opération (qui est pour l'instant dans le registre %eax) à l'addresse de la variable temporaire 
     o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 }
 
 void IRInstr::compareOperation(ostream & o, string operation){
     string var1 = params[0];
     string var2 = params[1];
+    string varTmp = params[2];
 
     if(var1[0] != '$' && var2[0] == '$'){
         o << "	cmpl	" << var2 << ", " << (*variables)[var1].second << "(%rbp)\n";
@@ -54,6 +56,8 @@ void IRInstr::compareOperation(ostream & o, string operation){
     o << "  andb	$1, %al\n";
     o << "  movzbl	%al, %eax\n";
 
+    // On stocke le résultat de l'opération (qui est pour l'instant dans le registre %eax) à l'addresse de la variable temporaire
+    o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 }
 
 void IRInstr::gen_asm(ostream & o){
@@ -247,9 +251,13 @@ void IRInstr::gen_asm(ostream & o){
         case IRInstr::op_neg: 
         {
             string var = params[0];
+            string varTmp = params[1];
 
             o << "	movl	" << (*variables)[var].second << "(%rbp), %eax\n";
             o << "    negl	%eax\n";
+
+            // On stocke le résultat de l'opération (qui est pour l'instant dans le registre %eax) à l'addresse de la variable temporaire
+            o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 
             break;
         }
@@ -257,11 +265,15 @@ void IRInstr::gen_asm(ostream & o){
         case IRInstr::op_not: 
         {
             string var = params[0];
+            string varTmp = params[1];
 
             o << "  cmpl	$0, "<<(*variables)[var].second<<"(%rbp)\n";
             o << "  sete  %al\n";
             o << "  movzbl	%al, %eax\n";
-            
+
+            // On stocke le résultat de l'opération (qui est pour l'instant dans le registre %eax) à l'addresse de la variable temporaire
+            o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
+
             break;
         }
     }
