@@ -1,4 +1,3 @@
 int main() {
-    return 7%1;
-    return 8;
+    return 8 % 3;
 }

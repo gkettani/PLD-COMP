@@ -39,14 +39,18 @@ class IRInstr{
             op_not
         } Operation;
 
-        IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, int> *symboleTable);
+        IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *symboleTable);
 
         /* Génère le code assembleur x86 de l'instruction IR*/
         void gen_asm(ostream &o);
+        /* Génère le code assembleur x86 d'une opération binaire*/
+        void binaryOperation(ostream &o, string operation);
+        /* Génère le code assembleur x86 d'une opération de comparaison*/
+        void compareOperation(ostream &o, string operation);
 
     private:
         BasicBlock *bb;        /** < BasicBlock auquel l'instruction IR appartient */
         Operation op;          /** < Opérateur de l'instruction*/
         vector<string> params; /** < Paramètres de l'instruction */
-        map<string, int> *variables; /** < Pointeur sur la Table des symboles */
+        map<string, pair<string,int>> *variables; /** < Pointeur sur la Table des symboles */
 };

@@ -1,24 +1,77 @@
 #include "CodeGenVisitor.h"
+#include <cstring>
 using namespace std;
 
 CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
 CodeGenVisitor::~CodeGenVisitor() {}
 
+void CodeGenVisitor::addVariable(string name,string type, int size)
+{
+	variables[name].first = type;
+	const char* typec = type.c_str();
+	if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		size = 4;
+	}else if(strcmp(typec,"char")==0) {
+		size = 1;
+	}else if(strcmp(typec,"double")){
+		size= 8;
+	}
+	
+	int offset = ++varCounter * -size;
+	variables[name].second = offset;
+}
+
+bool CodeGenVisitor::doesExist(string var){
+	if(variables.find(var) == variables.end()){ //si variable inexistante dans la table
+		return false;   
+	}
+	return true;
+}
+
+bool CodeGenVisitor::isVariable(string var){
+	if (var == "%eax"){
+		return false;
+	}
+	if (var.substr(0, 1) == "$"){
+		return false;
+	}
+	return true;
+}
+
+void CodeGenVisitor::checkDeclaredExpr(string var1, string var2){
+	if(isVariable(var1) && isVariable(var2) && !doesExist(var1) && !doesExist(var2)){
+		std::cerr << "Error: variable '" << var1 << "' undefined\n";
+		std::cerr << "Error: variable '" << var2 << "' undefined\n";
+		throw "Error undefined variable";
+	}
+	if(isVariable(var1) && !doesExist(var1)){
+		std::cerr << "Error: variable '" << var1 << "' undefined\n";
+		throw "Error undefined variable";	
+	}
+	if(isVariable(var2) && !doesExist(var2)){
+		std::cerr << "Error: variable '" << var2 << "' undefined\n";
+		throw "Error undefined variable";	
+	}
+}
+
+string CodeGenVisitor::convertCharToInt(string var)
+{
+	if(var[0] == '@'){
+		int firstChar = var.at(2);
+		int alp = firstChar;
+		stringstream ss;
+		ss << alp;
+		string str = ss.str();
+		char c = '$';
+		str.insert(0, 1, c);
+		return str;
+	}
+	return var;
+}
+
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {	
-	// cout<<".globl	main\n"
-	// 	" main: \n"
-	// 	" 	# prologue \n"
-	// 	" 	pushq %rbp # save %rbp on the stack \n"
-	// 	" 	movq %rsp, %rbp # define %rbp for the current function \n";
-	// 	// " 	movl	$"<<retval<<", %eax\n"
-	// 	visitChildren(ctx);
-	// 	cout<<" 	# epilogue \n"
-	// 	" 	popq %rbp # restore %rbp from the stack \n"
-	// 	" 	ret\n";
-
 	visitChildren(ctx);
-
 	return 0;
 }
 
@@ -37,48 +90,65 @@ antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 {	
 	string var = ctx->listvar()->getText();
+
 	//Vérifier si la variable a déjà été déclarée 
-	 if (variables.find(var) != variables.end()) {
-        std::cerr << "Error: variable '" << var << "' already defined\n";
-        throw "Error duplicate variable declaration";
-    }
-	visit(ctx->listvar());
-	
+	if (doesExist(var)) {
+		cerr << "Error: variable '" << var << "' already defined\n";
+		throw "Error duplicate variable declaration";
+	}
+
+	string type = ctx->type()->getText();
+	set<string> values = visit(ctx->listvar());
+	for (auto var : values) {
+		addVariable(var, type);
+	}
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitRet(ifccParser::RetContext *ctx)
-{
-	string var = "";
-	string varType = "";
-	if(ctx->expr()){
-		var = visit(ctx->expr()).as<string>();
-		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
+	string var = ctx->VAR()->getText();
+	/*Si on essaie de retourner une variable qui n'a pas été déclarée, on throw une erreur*/
+	if(!doesExist(var)){ //si variable inexistante dans la table
+		std::cerr << "Error: variable '" << var << "' undefined\n";
+		throw "Error undefined variable";
 	}else{
-		/* Si on a juste un return sans expression derrière, c'est comme si on return 0*/
-		var = "$0";
 		cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	}
+
 	string temp="";
 	
-
 	//iterate over the unused variables and print them
 	for (auto it = variablesUsageCounter.begin(); it != variablesUsageCounter.end(); ++it)
 	{
-		if(it->second == 0){
+		if((it->second).second == 0){
 			temp += it->first+",";
 		}
 	}
+
 	//Warning message:unused variables gcc 
-
 	if(temp != ""){
-		std::cerr<<"#warning unused variables: "<<temp<<endl;
+		cerr<<"#warning unused variables: "<<temp<<endl;
 	}
-	//move to the next basic block
+		//move to the next basic block
 	//cfg.current_bb = cfg.current_bb->exit_true;
+	return 0;
+}
 
+antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
+	string var = "$" + ctx->CONST()->getText();
+	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	return 0;
+}
+antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
+	string var = visit(ctx->expr()).as<string>();
+	var = convertCharToInt(var);
+	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	return 0;
+}
 
-
+antlrcpp::Any CodeGenVisitor::visitRetNothing(ifccParser::RetNothingContext *ctx){
+	string var = "$0";
+	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
 	return 0;
 }
 
@@ -86,46 +156,55 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 {
 
 	string var = ctx->VAR()->getText();
-	
+
 	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
 	if (ctx->type())
 	{
+		string type= ctx->type()->getText();
 		/*Vérifier d'abord si cette variable a déjà été déclarée
 		Dans ce cas, we throw an error*/
 		if (variables.find(var) != variables.end()) {
-        	std::cerr << "Error: variable '" << var << "' already defined\n";
-        	throw "Error duplicate variable declaration";
+			cerr << "Error: variable '" << var << "' already defined\n";
+			throw "Error duplicate variable declaration";
 		}
 		//Sinon, on l'ajoute dans la table des symboles
 		else{
-			varCounter += 1;
-			int offset = varCounter * -4;
-			variables[var] = offset;
-			variablesUsageCounter.insert({var,0});
+			addVariable(var, type);
+			variablesUsageCounter.insert({var,{type,0}});
+		}
 	}
-    }
+
+	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur*/
+	if(!doesExist(var)){ //si variable inexistante dans la table
+		if(!ctx->type()){ //s'il n'y a pas de type devant
+			//alors on a une erreur
+			std::cerr << "Error: variable '" << var << "' undefined\n";
+			throw "Error undefined variable";
+		}
+	}
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-
-	
 	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
 	if(varTmp[0] == '$' | varTmp == "%eax"){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
-	}
-	else
+	}else
 	{
-		cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+		string str = convertCharToInt(varTmp);
+		if(str==varTmp){
+			cfg.current_bb->add_IRInstr(IRInstr::copy, {var, str}, &variables);
+			return 0;
+		}
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
 	}
 
 	return 0;
-
 }
 
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
 	string var = visit(ctx->usedvar());
-	variablesUsageCounter[var]++;
+	variablesUsageCounter[var].second++;
 	return visit(ctx->usedvar());
 }
 
@@ -139,13 +218,25 @@ antlrcpp::Any CodeGenVisitor::visitConstExpr(ifccParser::ConstExprContext *ctx)
 antlrcpp::Any CodeGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx)
 {
 	string expr = visit(ctx->expr());
+	
+
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	if(isVariable(expr) && !doesExist(expr)){
+		std::cerr << "Error: variable '" << expr << "' undefined\n";
+		throw "Error undefined variable";
+			
+	}
+
 	return expr;
 }
 
-	antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx)
 {
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
+
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
 
 	string resultStr = "";
 
@@ -160,10 +251,8 @@ antlrcpp::Any CodeGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx)
 	else
 	{
 		// Si les opérandes ne sont pas toutes les deux des constantes, il faut construire des instructions assembleurs en plus
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::op_or, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -179,6 +268,9 @@ antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
 	string resultStr = "";
 
 	if (var1[0] == '$' && var2[0] == '$')
@@ -190,10 +282,8 @@ antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::op_xor, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -209,6 +299,9 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
 	string resultStr = "";
 
 	if(var1[0] == '$' && var2[0] == '$') {
@@ -217,11 +310,11 @@ antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx)
 		int result = val1 & val2;
 		resultStr = "$" + to_string(result);
 
-	}else{
-		varCounter += 1;
+	}
+	else
+	{
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 		
 		cfg.current_bb->add_IRInstr(IRInstr::op_and, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
@@ -235,6 +328,9 @@ antlrcpp::Any CodeGenVisitor::visitCompareExpr(ifccParser::CompareExprContext *c
 
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
+
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
 
 	if(ctx->COMPAREOP()->getText() == ">"){
 		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
@@ -252,6 +348,9 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
 	if(ctx->EQUALOP()->getText() == "=="){
 		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
 	}if(ctx->EQUALOP()->getText() == "!="){
@@ -262,164 +361,151 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	return resultStr;
 }
 
-antlrcpp::Any CodeGenVisitor::visitNegExpr(ifccParser::NegExprContext *ctx)
-{
+antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 	string var =visit(ctx->expr());
+	/*Si la variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	if(isVariable(var) && !doesExist(var)){
+		std::cerr << "Error: variable '" << var << "' undefined\n";
+		throw "Error undefined variable";	
+	}
 
 	string resultStr = "";
-
 	if(var[0] == '$' ) {
 		int val = stoi(ctx->expr()->getText());
-		int result = - val;
-		resultStr = "$" + to_string(result);
-
-	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
-		resultStr = "%eax";
-	}
-	return resultStr;
-}
-antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx)
-{
-	string var =visit(ctx->expr());
-
-	string resultStr = "";
-
-	if(var[0] == '$' ) {
-		int val = stoi(ctx->expr()->getText());
-		int result = ! val;
-		resultStr = "$" + to_string(result);
-
-	}else{
-		cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
-		resultStr = "%eax";
-	}
-	return resultStr;
-}
-
-antlrcpp::Any CodeGenVisitor::visitPlusExpr(ifccParser::PlusExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		int result = val1 + val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		varCounter += 1;
-		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
-
-		cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-
-antlrcpp::Any CodeGenVisitor::visitMinusExpr(ifccParser::MinusExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		int result = val1 - val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		varCounter += 1;
-		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
-
-		cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-// multdiv 
-antlrcpp::Any CodeGenVisitor::visitMultExpr(ifccParser::MultExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		int result = val1 * val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		varCounter += 1;
-		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
-
-		cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}
-
-// divexpr taking care of division by 0
-antlrcpp::Any CodeGenVisitor::visitDivExpr(ifccParser::DivExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		if (val2 == 0)
-		{
-			std::cerr<< "Error : Division by 0" << endl;
-			throw "Division by 0";
+		int result;
+		if(ctx->unaryop()->getText() == "!"){
+			result = ! val;
 		}
-		int result = val1 / val2;
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			result = -val;
+		}
+		resultStr = "$" + to_string(result);
+
+	}else{
+		if(ctx->unaryop()->getText() == "!"){
+			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+		}
+		else if(ctx->unaryop()->getText() == "-")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+		}
+
+		resultStr = "%eax";
+	}
+
+	return resultStr;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		int result;
+		if(ctx->addsubop()->getText() == "+"){
+			result = val1 + val2;
+		}
+		else if(ctx->addsubop()->getText() == "-")
+		{
+			result = val1 - val2;
+		}
 		resultStr = "$" + to_string(result);
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
-		cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
+		if(ctx->addsubop()->getText() == "+"){
+			cfg.current_bb->add_IRInstr(IRInstr::add, {var1, var2, varTmp}, &variables);
+		}
+		else if(ctx->addsubop()->getText() == "-")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::sub, {var1, var2, varTmp}, &variables);
+		}
 		resultStr = varTmp;
 	}
 
 	return resultStr;
 }
 
+antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
 
+	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
+	checkDeclaredExpr(var1, var2);
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		int result;
+		if(ctx->multdivop()->getText() == "*"){
+			result = val1 * val2;
+		}
+		else if(ctx->multdivop()->getText() == "/")
+		{
+			if (val2 == 0)
+			{
+				cerr<< "Error : Division by 0" << endl;
+				throw "Division by 0";
+			}
+			result = val1 / val2;
+		}
+		else if(ctx->multdivop()->getText() == "%"){
+			if (val2 == 0)
+			{
+				cerr<< "Error : Division by 0" << endl;
+				throw "Division by 0";
+			}
+			result = val1 % val2;
+		}
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
+		if(ctx->multdivop()->getText() == "*"){
+			cfg.current_bb->add_IRInstr(IRInstr::mul, {var1, var2, varTmp}, &variables);
+		}
+		else if(ctx->multdivop()->getText() == "/")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
+		}
+		else if(ctx->multdivop()->getText() == "%")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
+		}
+		resultStr = varTmp;
+	}
+
+	return resultStr;
+}
+
+/*	
 antlrcpp::Any CodeGenVisitor::visitModExpr(ifccParser::ModExprContext *ctx)
 {
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
+
+	//Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur
+	checkDeclaredExpr(var1, var2);
 
 	string resultStr = "";
 
@@ -437,51 +523,105 @@ antlrcpp::Any CodeGenVisitor::visitModExpr(ifccParser::ModExprContext *ctx)
 	}
 	else
 	{
-		varCounter += 1;
 		string varTmp = "!tmp" + varCounter;
-		int offset = varCounter * -4;
-		variables[varTmp] = offset;
+		addVariable(varTmp);
 
 		cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
 		resultStr = varTmp;
 	}
 
 	return resultStr;
-}
+}*/
 
 antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 {
-	
 	//récuperer la liste des variables 
 	string var = ctx->getText();
 	string delimiter = ",";
 	string varValue;
 	size_t pos = 0;
 	string token;
+	set<string> values;
+	
 	//split la liste des variables
-	while ((pos = var.find(delimiter)) != std::string::npos) {
-    token = var.substr(0, pos);
-	varValue = "0";
-	varCounter += 1;
-	int offset = varCounter * -4;
-	variables[token] = offset;
-	variablesUsageCounter[token] = 0;//ajout d'une variable non utilisée
-	cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
-    var.erase(0, pos + delimiter.length());
+	while ((pos = var.find(delimiter)) != string::npos) {
+		token = var.substr(0, pos);
+		varValue = "0";
+		values.insert(token);
+		variablesUsageCounter[token].second = 0;//ajout d'une variable non utilisée
+		cfg.current_bb->add_IRInstr(IRInstr::decl, {token, varValue}, &variables);
+		var.erase(0, pos + delimiter.length());
 	}
 	varValue = "0";
-	varCounter += 1;
-	int offset = varCounter * -4;
-	variables[var] = offset;
-	variablesUsageCounter[var] = 0;//ajout d'une variable non utilisée
+	values.insert(var);
+	variablesUsageCounter[var].second = 0;//ajout d'une variable non utilisée
+	
 	cfg.current_bb->add_IRInstr(IRInstr::decl, {var, varValue}, &variables);
-
-
-return 0;
-
+	return values;
 }
 
 antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *context) {
-		string var = context->VAR()->getText();
-		return var;
+	string var = context->VAR()->getText();
+	return var;
 };
+
+antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) {
+	string var = "@" + ctx->ABCD()->getText();
+	return var;
+};
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
+{
+	// TODO: indiquer que la variable est utilisée
+	string var = ctx->VAR()->getText();
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	string op = ctx->incrdecrop()->getText();
+
+	if (op == "++")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::add, {var, "$1", varTmp}, &variables);
+	}
+	else if (op == "--")
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::sub, {var, "$1", varTmp}, &variables);
+	}
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitIncrdecrExpr(ifccParser::IncrdecrExprContext *ctx)
+{
+	string var = visit(ctx->incrdecr());
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::add, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
+	string var2 = visit(ctx->expr());
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
+	cfg.current_bb->add_IRInstr(IRInstr::sub, {var, var2, varTmp}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
+
+	return var;
+}

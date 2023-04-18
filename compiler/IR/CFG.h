@@ -44,7 +44,7 @@ class CFG
         // int nextFreeSymbolIndex;      /**< to allocate new symbols in the symbol table */
         // int nextBBnumber;             /**< just for naming */
 
-        map<string, int> *variables; /**< Pointeur sur la table des symboles */
+        map<string, pair<string,int>> *variables; /**< Pointeur sur la table des symboles */
         vector<BasicBlock *> bbs; /**< all the basic blocks of this CFG*/
 };
 

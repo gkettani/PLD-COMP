@@ -7,8 +7,11 @@ prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
 type : INT | CHAR ;
 
 instruction : declare ';'
+            | incrdecr ';'
             | affectation ';'
-            | ret ';'            
+            | addAffect ';'
+            | subAffect ';'
+            | ret ';'           
             ;
 
 declare: type listvar 
@@ -17,34 +20,50 @@ declare: type listvar
 listvar: VAR (',' VAR)*
         ;
 
+incrdecr: incrdecrop VAR;
+
 affectation: type VAR '=' expr
                 | VAR '=' expr
         ;
+
+addAffect: VAR '+=' expr;
+
+subAffect: VAR '-=' expr;
+
+
 usedvar: VAR                    
         ;                     
 
 expr : CONST                      #constExpr
      | usedvar                    #varExpr
      | '(' expr ')'               #parExpr
-     | '-' expr                   #negExpr
-     | '!' expr                   #notExpr
-     | expr '*' expr              #multExpr 
-     | expr '/' expr              #divExpr
-     | expr '%' expr              #modExpr
-     | expr '-' expr              #minusExpr
-     | expr '+' expr              #plusExpr
+     | unaryop expr               #unaryExpr
+     | incrdecr                   #incrdecrExpr
+     | expr multdivop expr        #multDivExpr
+     | expr addsubop expr         #addSubExpr   
      | expr COMPAREOP expr        #compareExpr
      | expr EQUALOP expr          #equalExpr
      | expr '&' expr              #andExpr
      | expr '^' expr              #xorExpr
      | expr '|' expr              #orExpr
+     | ABCD                       #alphabets
      ;
 
-ret : RET expr
-    | RET
+ret : RET VAR                     #retVar
+    | RET CONST                   #retConst
+    | RET expr                    #retExpr
+    | RET                         #retNothing
     ;
 
 RET: 'return' ;
+
+unaryop:  '-' | '!';
+
+addsubop: '-' | '+';
+
+multdivop: '*' | '/' | '%';
+
+incrdecrop: '++' | '--';
 
 COMPAREOP: '>'
 | '<'
@@ -61,3 +80,4 @@ CONST : [0-9]+ ;
 COMMENT : '/*' .*? '*/' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;
 WS    : [ \t\r\n] -> channel(HIDDEN);
+ABCD :  '\''[0-9a-zA-Z]'\'';
