@@ -30,6 +30,7 @@ expr : CONST                      #constExpr
      | '!' expr                   #notExpr
      | expr '*' expr              #multExpr 
      | expr '/' expr              #divExpr
+     | expr '%' expr              #modExpr
      | expr '-' expr              #minusExpr
      | expr '+' expr              #plusExpr
      | expr COMPAREOP expr        #compareExpr
