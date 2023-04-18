@@ -176,6 +176,55 @@ void IRInstr::gen_asm(ostream & o){
             break;
         }
 
+        case IRInstr::mod:
+        {
+            string var1 = params[0];
+            string var2 = params[1];
+            string varTmp = params[2];
+
+            if (var1[0] != '$' && var2[0] == '$')
+            {
+                if(var2 == "$0")
+                {
+			        std::cerr<< "Error : Division by 0" << endl;
+			        throw "Division by 0";
+                }
+                else
+                {
+                    o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
+                    o << "	movl	$0 , %edx\n";
+                    o << "  cltd\n";
+                    o << "	idivl	" << var2 << ", %eax\n";
+                    o << "	movl	%edx , %eax\n";
+                }
+            }
+
+            if (var1[0] == '$' && var2[0] != '$')
+            {
+                o << "	movl	" << var1 << ", %eax\n";
+                o << "	movl	" << (*variables)[var2].second << "(%rbp), %ebx\n";
+                o << "	movl	$0 , %edx\n";
+                o << "  cltd\n";
+                o << "	idivl	%ebx, %eax\n";
+                o << "	movl	%edx , %eax\n";
+            }
+
+            if (var1[0] != '$' && var2[0] != '$')
+            {
+                o << "	movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
+                o << "	movl	" << (*variables)[var2].second << "(%rbp), %ebx\n";
+                o << "	movl	$0 , %edx\n";
+                o << "  cltd\n";
+                o << "	idivl	%ebx, %eax\n";
+                o << "	movl	%edx , %eax\n";
+            }
+
+            o << "	movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
+
+            break;
+        }
+
+
         case IRInstr::wmem:
         {
             string var = params[0];
