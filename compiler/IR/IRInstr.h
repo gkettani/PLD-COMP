@@ -21,6 +21,7 @@ class IRInstr{
             sub,
             mul,
             div,
+            mod,
             rmem,
             wmem,
             call,

@@ -126,6 +126,8 @@ antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
 	if(temp != ""){
 		cerr<<"#warning unused variables: "<<temp<<endl;
 	}
+		//move to the next basic block
+	//cfg.current_bb = cfg.current_bb->exit_true;
 	return 0;
 }
 
@@ -471,6 +473,14 @@ antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *c
 			}
 			result = val1 / val2;
 		}
+		else if(ctx->multdivop()->getText() == "%"){
+			if (val2 == 0)
+			{
+				cerr<< "Error : Division by 0" << endl;
+				throw "Division by 0";
+			}
+			result = val1 % val2;
+		}
 		resultStr = "$" + to_string(result);
 	}
 	else
@@ -485,11 +495,50 @@ antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *c
 		{
 			cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
 		}
+		else if(ctx->multdivop()->getText() == "%")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
+		}
 		resultStr = varTmp;
 	}
 
 	return resultStr;
 }
+
+/*	
+antlrcpp::Any CodeGenVisitor::visitModExpr(ifccParser::ModExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	//Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur
+	checkDeclaredExpr(var1, var2);
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		if (val2 == 0)
+		{
+			std::cerr<< "Error : Division by 0" << endl;
+			//throw "Division by 0";
+		}
+		int result = val1 % val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
+		cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
+	}
+
+	return resultStr;
+}*/
 
 antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 {

@@ -61,7 +61,7 @@ unaryop:  '-' | '!';
 
 addsubop: '-' | '+';
 
-multdivop: '*' | '/';
+multdivop: '*' | '/' | '%';
 
 incrdecrop: '++' | '--';
 
