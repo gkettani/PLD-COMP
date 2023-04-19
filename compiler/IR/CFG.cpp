@@ -5,6 +5,8 @@ using namespace std;
 CFG::CFG()
 {
     current_bb = createBB();
+    add_finalBB();
+    current_bb->setExitTrue(final_bb);
 }
 
 CFG::~CFG()
@@ -19,7 +21,7 @@ BasicBlock* CFG::createBB(){
     string nameBB = ".bb" + to_string(bbs.size());
     BasicBlock* bb = new BasicBlock(this, nameBB);
     bbs.push_back(bb);
-    current_bb = bb;
+    // current_bb = bb;
     return bb;
 }
 
@@ -28,24 +30,17 @@ void CFG::add_bb(BasicBlock* bb){
     current_bb = bb;
 }
 
+void CFG::add_finalBB()
+{
+    string nameBB = ".finalBB";
+    final_bb = new BasicBlock(this, nameBB);
+    bbs.push_back(final_bb);
+}
+
 void CFG::gen_asm(ostream& o){
-    gen_asm_prologue(o);
+    o << ".globl	main\n";
+    o << " main: \n";
     for(BasicBlock* bb : bbs){
         bb->gen_asm(o);
     }
-    gen_asm_epilogue(o);
-}
-
-void CFG::gen_asm_prologue(ostream& o){
-    o << ".globl	main\n";
-    o << " main: \n";
-    o << " 	# prologue \n";
-    o << " 	pushq %rbp # save %rbp on the stack \n";
-    o << " 	movq %rsp, %rbp # define %rbp for the current function \n";
-}
-
-void CFG::gen_asm_epilogue(ostream& o){
-    o << " 	# epilogue \n";
-    o << " 	popq %rbp # restore %rbp from the stack \n";
-    o << " 	ret\n";
 }
