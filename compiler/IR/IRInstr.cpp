@@ -72,6 +72,7 @@ void IRInstr::gen_asm(ostream & o){
 
         case IRInstr::restore_rbp:
         {
+            o << ".endLabel:\n";
             o << " 	# epilogue \n";
             o << " 	popq %rbp # restore %rbp from the stack \n";
             o << " 	ret\n";
