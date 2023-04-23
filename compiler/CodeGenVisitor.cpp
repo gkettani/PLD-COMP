@@ -138,14 +138,23 @@ antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
 	if(temp != ""){
 		cerr<<"#warning unused variables: "<<temp<<endl;
 	}
-		//move to the next basic block
-	//cfg.current_bb = cfg.current_bb->exit_true;
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
+
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
 	string var = "$" + ctx->CONST()->getText();
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
 
@@ -153,12 +162,22 @@ antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
 	string var = visit(ctx->expr()).as<string>();
 	var = convertCharToInt(var);
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRetNothing(ifccParser::RetNothingContext *ctx){
 	string var = "$0";
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
 
