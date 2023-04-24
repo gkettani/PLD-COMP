@@ -21,6 +21,12 @@ void CodeGenVisitor::addVariable(string name,string type, int size)
 	variables[name].second = offset;
 }
 
+void CodeGenVisitor::addArray(string name, string type, int size){
+	variables[name].first = type;
+	int offset = ++varCounter * -(4*size);
+	variables[name].second = offset;
+}
+
 bool CodeGenVisitor::doesExist(string var){
 	if(variables.find(var) == variables.end()){ //si variable inexistante dans la table
 		return false;   
@@ -95,9 +101,7 @@ antlrcpp::Any CodeGenVisitor::visitType(ifccParser::TypeContext *ctx)
 	visitChildren(ctx);
 	return 0;
 }
-
-antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
-{	
+antlrcpp::Any CodeGenVisitor::visitListVarDec(ifccParser::ListVarDecContext *ctx){
 	string var = ctx->listvar()->getText();
 
 	//Vérifier si la variable a déjà été déclarée 
@@ -111,6 +115,18 @@ antlrcpp::Any CodeGenVisitor::visitDeclare(ifccParser::DeclareContext *ctx)
 	for (auto var : values) {
 		addVariable(var, type);
 	}
+	return 0;
+}
+antlrcpp::Any CodeGenVisitor::visitArrayDec(ifccParser::ArrayDecContext *ctx){
+	string type = ctx->type()->getText();
+	string variableName = ctx->VAR()->getText();
+	if(doesExist(variableName)){
+		cerr << "Error: variable '" << variableName << "' already defined\n";
+		throw "Error duplicate variable declaration";
+	}
+	int size = stoi(ctx->CONST()->getText());
+	addArray(variableName, type, size);
+
 	return 0;
 }
 
@@ -181,14 +197,8 @@ antlrcpp::Any CodeGenVisitor::visitRetNothing(ifccParser::RetNothingContext *ctx
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
-{
-
-	string var = ctx->VAR()->getText();
-
-	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
-	if (ctx->type())
-	{
+antlrcpp::Any CodeGenVisitor::visitAffDecVar(ifccParser::AffDecVarContext *ctx){
+		string var = ctx->VAR()->getText();
 		string type= ctx->type()->getText();
 		/*Vérifier d'abord si cette variable a déjà été déclarée
 		Dans ce cas, we throw an error*/
@@ -201,9 +211,75 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 			addVariable(var, type);
 			variablesUsageCounter.insert({var,{type,0}});
 		}
+		/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
+		string varTmp = visit(ctx->expr()).as<string>();
+		if(varTmp[0] == '$'){
+			cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
+		}else
+		{
+			string str = convertCharToInt(varTmp);
+			if(str==varTmp){
+				cfg.current_bb->add_IRInstr(IRInstr::copy, {var, str}, &variables);
+				return 0;
+			}
+			cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
+		}
+		return 0;
+}
+antlrcpp::Any CodeGenVisitor::visitAffVar(ifccParser::AffVarContext *ctx){
+	string var = ctx->VAR()->getText();
+	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur*/
+	if(!doesExist(var)){ //si variable inexistante dans la table
+		//alors on a une erreur
+		std::cerr << "Error: variable '" << var << "' undefined\n";
+		throw "Error undefined variable";
+	}
+	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
+	string varTmp = visit(ctx->expr()).as<string>();
+	if(varTmp[0] == '$'){
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
+	}else
+	{
+		string str = convertCharToInt(varTmp);
+		if(str==varTmp){
+			cfg.current_bb->add_IRInstr(IRInstr::copy, {var, str}, &variables);
+			return 0;
+		}
+		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
+	}
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAffArray(ifccParser::AffArrayContext *ctx){
+	int valeur = stoi(ctx->CONST(1)->getText());
+	string constant = "$"+ to_string(valeur);
+	return 0;
+}
+
+
+/*antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
+{
+
+	string var = ctx->VAR()->getText();
+
+	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
+	if (ctx->type())
+	{
+		string type= ctx->type()->getText();
+		/*Vérifier d'abord si cette variable a déjà été déclarée
+		Dans ce cas, we throw an error
+		if (variables.find(var) != variables.end()) {
+			cerr << "Error: variable '" << var << "' already defined\n";
+			throw "Error duplicate variable declaration";
+		}
+		//Sinon, on l'ajoute dans la table des symboles
+		else{
+			addVariable(var, type);
+			variablesUsageCounter.insert({var,{type,0}});
+		}
 	}
 
-	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur*/
+	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur
 	if(!doesExist(var)){ //si variable inexistante dans la table
 		if(!ctx->type()){ //s'il n'y a pas de type devant
 			//alors on a une erreur
@@ -212,7 +288,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 		}
 	}
 
-	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
+	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation
 	string varTmp = visit(ctx->expr()).as<string>();
 	if(varTmp[0] == '$'){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
@@ -227,7 +303,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 	}
 
 	return 0;
-}
+}*/
 
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
