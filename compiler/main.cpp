@@ -16,7 +16,6 @@ using namespace std;
 
 int main(int argn, const char **argv)
 {
-  CFG controlFlowGraph;
 
   stringstream in;
   if (argn==2)
@@ -46,12 +45,16 @@ int main(int argn, const char **argv)
       exit(1);
   }
 
-  CodeGenVisitor v(controlFlowGraph);
+  vector <CFG> cfg;
+  CodeGenVisitor v(cfg);
   v.visit(tree);
 
   stringstream out;
-  controlFlowGraph.gen_asm(out);
-  cout << out.str();
+  for(vector<CFG>::iterator it = cfg.begin(); it != cfg.end(); it++){
+    (it)->gen_asm(cout, "main");
+  }
+
+  //cout << out.str();
 
   return 0;
 }

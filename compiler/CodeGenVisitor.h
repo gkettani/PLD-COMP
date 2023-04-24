@@ -10,7 +10,7 @@ using namespace std;
 
 class  CodeGenVisitor : public ifccBaseVisitor {
 	public:
-		CodeGenVisitor(CFG &cfg);
+		CodeGenVisitor(vector <CFG*> cfg);
 		~CodeGenVisitor();
 
 		virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override ;
@@ -37,6 +37,9 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitCompareExpr(ifccParser::CompareExprContext *ctx) override;
 		virtual antlrcpp::Any visitEqualExpr(ifccParser::EqualExprContext *ctx) override;
 		virtual antlrcpp::Any visitListvar(ifccParser::ListvarContext *ctx) override;
+		virtual antlrcpp::Any visitFunctionDeclaration(ifccParser::FunctionDeclarationContext *context) override;
+		virtual antlrcpp::Any visitFunctionDefinition(ifccParser::FunctionDefinitionContext *context) override;
+		virtual antlrcpp::Any visitFunctionCall(ifccParser::FunctionCallContext *context) override;
 		virtual antlrcpp::Any visitUsedvar(ifccParser::UsedvarContext *ctx) override;
 		virtual antlrcpp::Any visitIncrdecr(ifccParser::IncrdecrContext *ctx) override;
 		virtual antlrcpp::Any visitIncrdecrExpr(ifccParser::IncrdecrExprContext *ctx) override;
@@ -46,9 +49,13 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitElseStatement(ifccParser::ElseStatementContext *ctx) override;
 
 	protected:
-		CFG& cfg;
+		CFG  *current_cfg;
+		BasicBlock * bb;
+		vector <CFG *> cfg;
 		map<string, pair<string,int>> variables;
 		map<string, pair<string,int>> variablesUsageCounter;
+
+		
 		int varCounter = 0;
 
 		void addVariable(string name,string type = "int", int size = 4);

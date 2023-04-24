@@ -8,7 +8,7 @@
 class CFG
 {
     public:
-        CFG();
+        CFG(string name);
         ~CFG();
 
         /* Créer un basic block dans le CFG */
@@ -21,7 +21,17 @@ class CFG
         void add_finalBB();
 
         /* Génère le code assembleur x86 d'un CFG */
-        void gen_asm(ostream &o);
+        void gen_asm(ostream &o, string name);
+
+
+        //void gen_asm_function(ostream& o, string name)
+        //void gen_asm_prologue(ostream &o);
+
+        /* Génère le code assembleur x86 d'une fonction CFG */
+        //void gen_asm_fonction(ostream& o, string name);
+        //void gen_asm_fonction_prologue(ostream &o, string name);
+
+        //void gen_asm_epilogue(ostream &o);
 
         /* Pointeur sur le basic bloc courant */
         BasicBlock *current_bb;
@@ -42,6 +52,7 @@ class CFG
     protected:
         map<string, pair<string,int>> *variables;   /* Pointeur sur la table des symboles */
         vector<BasicBlock *> bbs;                   /* Tous les basic blocks du CFG*/
+        string name;
 };
 
 #endif

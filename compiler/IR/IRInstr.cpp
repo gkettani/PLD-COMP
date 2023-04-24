@@ -60,7 +60,7 @@ void IRInstr::compareOperation(ostream & o, string operation){
     o << "    movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 }
 
-void IRInstr::gen_asm(ostream & o){
+void IRInstr::gen_asm(ostream & o, string name){
     switch(op){
         case IRInstr::save_rbp:
         {

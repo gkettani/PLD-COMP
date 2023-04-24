@@ -2,7 +2,10 @@
 #include <cstring>
 using namespace std;
 
-CodeGenVisitor::CodeGenVisitor(CFG &cfg) : cfg(cfg) {}
+CodeGenVisitor::CodeGenVisitor(vector <CFG *> cfg) : cfg(cfg) {
+	current_cfg = nullptr;
+	bb = nullptr;
+}
 CodeGenVisitor::~CodeGenVisitor() {}
 
 void CodeGenVisitor::addVariable(string name,string type, int size)
@@ -68,6 +71,11 @@ string CodeGenVisitor::convertCharToInt(string var)
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {	
+	CFG * main_cfg = new CFG("main");
+	current_cfg = main_cfg;
+
+	cfg->push_back(current_cfg);
+
 	visitChildren(ctx);
 	return 0;
 }
@@ -606,6 +614,20 @@ antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) 
 	string var = "@" + ctx->ABCD()->getText();
 	return var;
 };
+
+antlrcpp::Any visitFunctionDeclaration(ifccParser::FunctionDeclarationContext *context) {}
+
+antlrcpp::Any visitFunctionDefinition(ifccParser::FunctionDefinitionContext *context) {
+	CFG cfgFunction;
+	stringstream out;
+	cfgFunction.gen_asm(out, context->VAR()->getText());
+	cout << out.str();
+
+
+}
+
+antlrcpp::Any visitFunctionCall(ifccParser::FunctionCallContext *context) {}
+
 
 antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
 {

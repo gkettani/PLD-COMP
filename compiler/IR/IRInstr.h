@@ -46,7 +46,7 @@ class IRInstr{
         IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *symboleTable);
 
         /* Génère le code assembleur x86 de l'instruction IR*/
-        void gen_asm(ostream &o);
+        void gen_asm(ostream &o, string name);
         /* Génère le code assembleur x86 d'une opération binaire*/
         void binaryOperation(ostream &o, string operation);
         /* Génère le code assembleur x86 d'une opération de comparaison*/

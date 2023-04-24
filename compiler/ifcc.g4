@@ -11,6 +11,20 @@ startMainBlock: '{'
 endMainBlock: '}' 
 ;
 
+function : functionRet VAR '(' parameters ')' ';'         #functionDeclaration
+| functionRet VAR '(' parameters ')' '{' instruction* '}' #functionDefinition
+| VAR '(' parameters ')'                                  #functionCall
+;
+
+parameters : type VAR ',' parameters
+| type VAR
+;
+
+functionRet : INT
+| CHAR
+| 'void'
+;
+
 type: INT | CHAR 
 ;
 

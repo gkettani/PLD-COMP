@@ -2,7 +2,7 @@
 
 using namespace std;
 
-CFG::CFG()
+CFG::CFG(string name)
 {
     current_bb = createBB();
     add_finalBB();
@@ -37,9 +37,17 @@ void CFG::add_finalBB()
     bbs.push_back(final_bb);
 }
 
-void CFG::gen_asm(ostream& o){
-    o << ".globl	main\n";
+/*void CFG::gen_asm(ostream& o){
+    o << ".globl	_main\n";
     o << " main: \n";
+    for(BasicBlock* bb : bbs){
+        bb->gen_asm(o);
+    }
+}*/
+
+void CFG::gen_asm(ostream& o, string name){
+    o << ".globl	_"<<name<<"\n";
+    o << "_"<<name<<":\n";
     for(BasicBlock* bb : bbs){
         bb->gen_asm(o);
     }
