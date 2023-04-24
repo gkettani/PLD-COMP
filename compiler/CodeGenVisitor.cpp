@@ -29,9 +29,6 @@ bool CodeGenVisitor::doesExist(string var){
 }
 
 bool CodeGenVisitor::isVariable(string var){
-	if (var == "%eax"){
-		return false;
-	}
 	if (var.substr(0, 1) == "$"){
 		return false;
 	}
@@ -72,6 +69,18 @@ string CodeGenVisitor::convertCharToInt(string var)
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {	
 	visitChildren(ctx);
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitStartMainBlock(ifccParser::StartMainBlockContext *ctx) {
+	/* On save le %rbp sur la stack et on définit le rbp de la fonction courrante*/
+	cfg.current_bb->add_IRInstr(IRInstr::save_rbp, {}, &variables);
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx) {
+	/* On restore le %rbp dans le bloc final et on ajoute une instruction au bloc courant qui permet de sauter au bloc final*/
+	cfg.final_bb->add_IRInstr(IRInstr::restore_rbp, {}, &variables);
 	return 0;
 }
 
@@ -129,24 +138,46 @@ antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
 	if(temp != ""){
 		cerr<<"#warning unused variables: "<<temp<<endl;
 	}
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
+
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
 	string var = "$" + ctx->CONST()->getText();
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
 	string var = visit(ctx->expr()).as<string>();
 	var = convertCharToInt(var);
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitRetNothing(ifccParser::RetNothingContext *ctx){
 	string var = "$0";
 	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
+	//move to the last basic block
+	cfg.current_bb->setExitTrue(cfg.final_bb);
+	cfg.current_bb->setExitFalse(nullptr);
+	cfg.current_bb=cfg.final_bb;
+	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
 	return 0;
 }
 
@@ -183,8 +214,7 @@ antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *c
 
 	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation*/
 	string varTmp = visit(ctx->expr()).as<string>();
-	/* Le cas varTmp == "%eax" est utile pour construire la 3ème instruction assembleur quand on fait une opération binaire*/
-	if(varTmp[0] == '$' | varTmp == "%eax"){
+	if(varTmp[0] == '$'){
 		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
 	}else
 	{
@@ -327,15 +357,18 @@ antlrcpp::Any CodeGenVisitor::visitCompareExpr(ifccParser::CompareExprContext *c
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
 	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	checkDeclaredExpr(var1, var2);
 
 	if(ctx->COMPAREOP()->getText() == ">"){
-		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_sup, {var1, var2, varTmp}, &variables);
 	}if(ctx->COMPAREOP()->getText() == "<"){
-		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_min, {var1, var2, varTmp}, &variables);
 	}
-	resultStr = "%eax";
+	resultStr = varTmp;
 	
 	return resultStr;
 }
@@ -346,21 +379,24 @@ antlrcpp::Any CodeGenVisitor::visitEqualExpr(ifccParser::EqualExprContext *ctx){
 	string var1 = visit(ctx->expr(0));
 	string var2 = visit(ctx->expr(1));
 
+	string varTmp = "!tmp" + varCounter;
+	addVariable(varTmp);
+
 	/*Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	checkDeclaredExpr(var1, var2);
 
 	if(ctx->EQUALOP()->getText() == "=="){
-		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_equal, {var1, var2, varTmp}, &variables);
 	}if(ctx->EQUALOP()->getText() == "!="){
-		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2}, &variables);
+		cfg.current_bb->add_IRInstr(IRInstr::op_diff, {var1, var2, varTmp}, &variables);
 	}
-	resultStr = "%eax";
+	resultStr = varTmp;
 	
 	return resultStr;
 }
 
 antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
-	string var =visit(ctx->expr());
+	string var = visit(ctx->expr());
 	/*Si la variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur*/
 	if(isVariable(var) && !doesExist(var)){
 		std::cerr << "Error: variable '" << var << "' undefined\n";
@@ -369,10 +405,10 @@ antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 
 	string resultStr = "";
 	if(var[0] == '$' ) {
-		int val = stoi(ctx->expr()->getText());
+		int val = stoi(var.substr(1));
 		int result;
 		if(ctx->unaryop()->getText() == "!"){
-			result = ! val;
+			result = !val;
 		}
 		else if(ctx->unaryop()->getText() == "-")
 		{
@@ -381,15 +417,18 @@ antlrcpp::Any CodeGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx){
 		resultStr = "$" + to_string(result);
 
 	}else{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
 		if(ctx->unaryop()->getText() == "!"){
-			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var}, &variables);
+			cfg.current_bb->add_IRInstr(IRInstr::op_not, {var, varTmp}, &variables);
 		}
 		else if(ctx->unaryop()->getText() == "-")
 		{
-			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var}, &variables);
+			cfg.current_bb->add_IRInstr(IRInstr::op_neg, {var, varTmp}, &variables);
 		}
 
-		resultStr = "%eax";
+		resultStr = varTmp;
 	}
 
 	return resultStr;
@@ -464,6 +503,14 @@ antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *c
 			}
 			result = val1 / val2;
 		}
+		else if(ctx->multdivop()->getText() == "%"){
+			if (val2 == 0)
+			{
+				cerr<< "Error : Division by 0" << endl;
+				throw "Division by 0";
+			}
+			result = val1 % val2;
+		}
 		resultStr = "$" + to_string(result);
 	}
 	else
@@ -478,11 +525,50 @@ antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *c
 		{
 			cfg.current_bb->add_IRInstr(IRInstr::div, {var1, var2, varTmp}, &variables);
 		}
+		else if(ctx->multdivop()->getText() == "%")
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
+		}
 		resultStr = varTmp;
 	}
 
 	return resultStr;
 }
+
+/*	
+antlrcpp::Any CodeGenVisitor::visitModExpr(ifccParser::ModExprContext *ctx)
+{
+	string var1 = visit(ctx->expr(0));
+	string var2 = visit(ctx->expr(1));
+
+	//Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur
+	checkDeclaredExpr(var1, var2);
+
+	string resultStr = "";
+
+	if (var1[0] == '$' && var2[0] == '$')
+	{
+		int val1 = stoi(var1.substr(1));
+		int val2 = stoi(var2.substr(1));
+		if (val2 == 0)
+		{
+			std::cerr<< "Error : Division by 0" << endl;
+			//throw "Division by 0";
+		}
+		int result = val1 % val2;
+		resultStr = "$" + to_string(result);
+	}
+	else
+	{
+		string varTmp = "!tmp" + varCounter;
+		addVariable(varTmp);
+
+		cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
+		resultStr = varTmp;
+	}
+
+	return resultStr;
+}*/
 
 antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 {
@@ -511,8 +597,8 @@ antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 	return values;
 }
 
-antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *context) {
-	string var = context->VAR()->getText();
+antlrcpp::Any CodeGenVisitor::visitUsedvar(ifccParser::UsedvarContext *ctx) {
+	string var = ctx->VAR()->getText();
 	return var;
 };
 
@@ -554,6 +640,7 @@ antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
 	string var = ctx->VAR()->getText();
 	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
 	string var2 = visit(ctx->expr());
+
 	string varTmp = "!tmp" + varCounter;
 	addVariable(varTmp);
 
@@ -575,4 +662,87 @@ antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
 	cfg.current_bb->add_IRInstr(IRInstr::copy, {var, varTmp}, &variables);
 
 	return var;
+}
+
+antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *ctx) 
+{
+	/* Basic Block courant*/
+	BasicBlock *testBB = cfg.current_bb;
+
+	/* On visite l'expression de la condition du if. On recupère le nom de la variable temporaire qui contient la valeur booléenne de cette expression*/
+	string conditionEval = visit(ctx->expr());
+
+	/* On stocke dans l'attribut TestVarName le nom de cette variable temporaire */
+	testBB->setTestVarName(conditionEval);
+
+	/* Création d'un basic block correspondant au then*/
+	BasicBlock *thenBB = cfg.createBB();
+
+	/* Création d'un basic block correspondant au endIf */
+	BasicBlock *endIfBB = cfg.createBB();
+
+	/* endIfBB recupère les successeurs de testBB*/
+	endIfBB->setExitTrue(testBB->getExitTrue());
+	endIfBB->setExitFalse(testBB->getExitFalse());
+
+	/* Dans le cas où l'expression du if est True, le bloc suivant du bloc testBB est thenBB*/
+	testBB->setExitTrue(thenBB);
+
+	/* Blocs suivants de thenBB*/
+	thenBB->setExitTrue(endIfBB);
+	thenBB->setExitFalse(nullptr);
+
+	/* Vérification de la présence d'un elseStatement*/
+	bool hasElseStatement = ctx->elseStatement();
+	if (hasElseStatement)
+	{
+		/* Création d'un basic block correspondant au else*/
+		BasicBlock *elseBB = cfg.createBB();
+
+		/* Dans le cas où l'expression du if est False, le bloc suivant du bloc courant est elseBB*/
+		testBB->setExitFalse(elseBB);
+
+		/* Successeurs de elseBB*/
+		elseBB->setExitTrue(endIfBB);
+		elseBB->setExitFalse(nullptr);
+
+		/* On remplit le bloc elseBB avec ses intructions*/
+		cfg.current_bb = elseBB;
+		visit(ctx->elseStatement());
+	}
+	else
+	{
+		/* S'il n'y a pas de else et dans le cas où l'expression du if est False, le bloc suivant du bloc courant est endIfBB*/
+		testBB->setExitFalse(endIfBB);
+	}
+
+	/* On remplit le bloc thenBB avec ses intructions*/
+	cfg.current_bb = thenBB;
+	visit(ctx->blocInstr());
+	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
+	thenBB->add_IRInstr(IRInstr::absolute_jump, {thenBB->getExitTrue()->getLabel()}, &variables);
+
+	/* On ajoute au bloc testBB l'instruction qui permet de savoir vers quel bloc on saute depuis testBB */
+	testBB->add_IRInstr(IRInstr::conditional_jump, {testBB->getTestVarName(), testBB->getExitTrue()->getLabel(), testBB->getExitFalse()->getLabel()}, &variables);
+
+	/* On ajoute l'instruction qui permet de sauter au bloc qui suit endIfBB */
+	endIfBB->add_IRInstr(IRInstr::absolute_jump, {endIfBB->getExitTrue()->getLabel()}, &variables);
+	
+	/* A la fin du if...else, le bloc courant est le bloc qui suit endIfBB */
+	cfg.current_bb = endIfBB->getExitTrue();
+
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContext *ctx) 
+{
+	BasicBlock* elseBB = cfg.current_bb;
+
+	/* On remplit le bloc elseBB avec ses intructions*/
+	visit(ctx->blocInstr());
+
+	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
+	elseBB->add_IRInstr(IRInstr::absolute_jump, {elseBB->getExitTrue()->getLabel()}, &variables);
+	
+	return 0; 
 }

@@ -13,6 +13,8 @@ class IRInstr{
     public:
         typedef enum
         {
+            save_rbp,
+            restore_rbp,
             decl,
             ret,
             ldconst,
@@ -21,12 +23,13 @@ class IRInstr{
             sub,
             mul,
             div,
+            mod,
             rmem,
             wmem,
             call,
             cmp_eq,
             cmp_lt,
-            cmp_le, 
+            cmp_le,
             op_and,
             op_or,
             op_xor,
@@ -35,7 +38,9 @@ class IRInstr{
             op_equal,
             op_diff,
             op_neg,
-            op_not
+            op_not,
+            conditional_jump,
+            absolute_jump
         } Operation;
 
         IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *symboleTable);

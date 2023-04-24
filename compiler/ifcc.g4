@@ -1,69 +1,89 @@
 grammar ifcc;
 
-axiom : prog ;
+axiom: prog ;
 
-prog : 'int' 'main' '(' ')' '{' instruction* '}' ;
+prog: 'int' 'main' '(' ')' startMainBlock blocInstr endMainBlock 
+;
 
-type : INT | CHAR ;
+startMainBlock: '{'
+;
 
-instruction : declare ';'
-            | incrdecr ';'
-            | affectation ';'
-            | addAffect ';'
-            | subAffect ';'
-            | ret ';'           
-            ;
+endMainBlock: '}' 
+;
+
+type: INT | CHAR 
+;
+
+instruction: declare ';'
+           | incrdecr ';'
+           | affectation ';'
+           | addAffect ';'
+           | subAffect ';'
+           | ret ';' 
+           | ifStatement          
+;
+
+blocInstr: instruction *
+;
 
 declare: type listvar 
-       ;
+;
 
 listvar: VAR (',' VAR)*
-        ;
+;
 
-incrdecr: incrdecrop VAR;
+incrdecr: incrdecrop VAR
+;
 
 affectation: type VAR '=' expr
-                | VAR '=' expr
-        ;
+           | VAR '=' expr
+;
 
-addAffect: VAR '+=' expr;
+addAffect: VAR '+=' expr
+;
 
-subAffect: VAR '-=' expr;
+subAffect: VAR '-=' expr
+;
 
 
 usedvar: VAR                    
-        ;                     
+;                     
 
-expr : CONST                      #constExpr
-     | usedvar                    #varExpr
-     | '(' expr ')'               #parExpr
-     | unaryop expr               #unaryExpr
-     | incrdecr                   #incrdecrExpr
-     | expr multdivop expr        #multDivExpr
-     | expr addsubop expr         #addSubExpr   
-     | expr COMPAREOP expr        #compareExpr
-     | expr EQUALOP expr          #equalExpr
-     | expr '&' expr              #andExpr
-     | expr '^' expr              #xorExpr
-     | expr '|' expr              #orExpr
-     | ABCD                       #alphabets
-     ;
+expr: CONST                      #constExpr
+    | usedvar                    #varExpr
+    | '(' expr ')'               #parExpr
+    | unaryop expr               #unaryExpr
+    | incrdecr                   #incrdecrExpr
+    | expr multdivop expr        #multDivExpr
+    | expr addsubop expr         #addSubExpr   
+    | expr COMPAREOP expr        #compareExpr
+    | expr EQUALOP expr          #equalExpr
+    | expr '&' expr              #andExpr
+    | expr '^' expr              #xorExpr
+    | expr '|' expr              #orExpr
+    | ABCD                       #alphabets
+;
 
-ret : RET VAR                     #retVar
-    | RET CONST                   #retConst
-    | RET expr                    #retExpr
-    | RET                         #retNothing
-    ;
+ret: RET VAR                     #retVar
+   | RET CONST                   #retConst
+   | RET expr                    #retExpr
+   | RET                         #retNothing
+;
 
-RET: 'return' ;
+RET: 'return' 
+;
 
-unaryop:  '-' | '!';
+unaryop:  '-' | '!'
+;
 
-addsubop: '-' | '+';
+addsubop: '-' | '+'
+;
 
-multdivop: '*' | '/';
+multdivop: '*' | '/' | '%'
+;
 
-incrdecrop: '++' | '--';
+incrdecrop: '++' | '--'
+;
 
 COMPAREOP: '>'
 | '<'
@@ -71,6 +91,14 @@ COMPAREOP: '>'
 
 EQUALOP: '=='
 | '!='
+;
+
+ifStatement: 
+        'if' '(' expr ')' '{' blocInstr '}' (elseStatement)?     
+;
+
+elseStatement:
+        'else' '{' blocInstr '}'                                
 ;
 
 INT : 'int' ;
