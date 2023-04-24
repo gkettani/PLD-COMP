@@ -44,6 +44,9 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitSubAffect(ifccParser::SubAffectContext *ctx) override;
 		virtual antlrcpp::Any visitIfStatement(ifccParser::IfStatementContext *ctx) override;
 		virtual antlrcpp::Any visitElseStatement(ifccParser::ElseStatementContext *ctx) override;
+		virtual antlrcpp::Any visitPutcharVar(ifccParser::PutcharVarContext *context) override;
+    	virtual antlrcpp::Any visitPutcharChar(ifccParser::PutcharCharContext *context) override;
+    	virtual antlrcpp::Any visitGetchar(ifccParser::GetcharContext *context) override;
 
 	protected:
 		CFG& cfg;
