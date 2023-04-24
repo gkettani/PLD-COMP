@@ -23,7 +23,16 @@ void CodeGenVisitor::addVariable(string name,string type, int size)
 
 void CodeGenVisitor::addArray(string name, string type, int size){
 	variables[name].first = type;
-	int offset = ++varCounter * -(4*size);
+	const char* typec = type.c_str();
+	int x;
+	if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		x = 4;
+	}else if(strcmp(typec,"char")==0) {
+		x = 1;
+	}else if(strcmp(typec,"double")){
+		x= 8;
+	}
+	int offset = ++varCounter * -(x*size);
 	variables[name].second = offset;
 }
 
@@ -251,59 +260,9 @@ antlrcpp::Any CodeGenVisitor::visitAffVar(ifccParser::AffVarContext *ctx){
 }
 
 antlrcpp::Any CodeGenVisitor::visitAffArray(ifccParser::AffArrayContext *ctx){
-	int valeur = stoi(ctx->CONST(1)->getText());
-	string constant = "$"+ to_string(valeur);
+	
 	return 0;
 }
-
-
-/*antlrcpp::Any CodeGenVisitor::visitAffectation(ifccParser::AffectationContext *ctx)
-{
-
-	string var = ctx->VAR()->getText();
-
-	//S'il y a un type devant le nom de la variable alors c'est une initialisation, il faut mettre à jour la table des symboles
-	if (ctx->type())
-	{
-		string type= ctx->type()->getText();
-		/*Vérifier d'abord si cette variable a déjà été déclarée
-		Dans ce cas, we throw an error
-		if (variables.find(var) != variables.end()) {
-			cerr << "Error: variable '" << var << "' already defined\n";
-			throw "Error duplicate variable declaration";
-		}
-		//Sinon, on l'ajoute dans la table des symboles
-		else{
-			addVariable(var, type);
-			variablesUsageCounter.insert({var,{type,0}});
-		}
-	}
-
-	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur
-	if(!doesExist(var)){ //si variable inexistante dans la table
-		if(!ctx->type()){ //s'il n'y a pas de type devant
-			//alors on a une erreur
-			std::cerr << "Error: variable '" << var << "' undefined\n";
-			throw "Error undefined variable";
-		}
-	}
-
-	/* On récupère la variable ou la constante qui se trouve en partie droite de l'affectation
-	string varTmp = visit(ctx->expr()).as<string>();
-	if(varTmp[0] == '$'){
-		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, varTmp}, &variables);
-	}else
-	{
-		string str = convertCharToInt(varTmp);
-		if(str==varTmp){
-			cfg.current_bb->add_IRInstr(IRInstr::copy, {var, str}, &variables);
-			return 0;
-		}
-		cfg.current_bb->add_IRInstr(IRInstr::ldconst, {var, str}, &variables);
-	}
-
-	return 0;
-}*/
 
 antlrcpp::Any CodeGenVisitor::visitVarExpr(ifccParser::VarExprContext *ctx)
 {
