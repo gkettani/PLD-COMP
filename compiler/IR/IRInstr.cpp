@@ -87,7 +87,27 @@ void IRInstr::gen_asm(ostream & o){
             o << "    movl	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
             break;
         }
+        //////////////////////////////:
+        case IRInstr::decltab:
+        {
+            string var = params[0];
+            string tabSize = params[1];
+            int x = stoi(tabSize);
+            o << "    subq	$" << x*4 << ", (%rsp)\n";
 
+            break;
+        }
+        case IRInstr::afftab:
+        {
+            string var = params[0];
+            string tabSize = params[1];
+            int x = stoi(tabSize);
+            string valeur = params[2];
+            o << "    subq	$" << x*4 << ", (%rsp)\n";
+            
+            break;
+        }
+//////////////////////////////////////:
         case IRInstr::ret:
         {
             string var = params[0];

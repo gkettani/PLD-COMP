@@ -16,6 +16,8 @@ class IRInstr{
             save_rbp,
             restore_rbp,
             decl,
+            decltab,
+            afftab,
             ret,
             ldconst,
             copy,

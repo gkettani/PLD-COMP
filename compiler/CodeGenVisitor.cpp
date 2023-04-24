@@ -23,7 +23,16 @@ void CodeGenVisitor::addVariable(string name,string type, int size)
 
 void CodeGenVisitor::addArray(string name, string type, int size){
 	variables[name].first = type;
-	int offset = ++varCounter * -(4*size);
+	const char* typec = type.c_str();
+	int x=0;
+	if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		x = 4;
+	}else if(strcmp(typec,"char")==0) {
+		x = 1;
+	}else if(strcmp(typec,"double")){
+		x= 8;
+	}
+	int offset = ++varCounter * -(4*x);
 	variables[name].second = offset;
 }
 
@@ -124,9 +133,11 @@ antlrcpp::Any CodeGenVisitor::visitArrayDec(ifccParser::ArrayDecContext *ctx){
 		cerr << "Error: variable '" << variableName << "' already defined\n";
 		throw "Error duplicate variable declaration";
 	}
-	int size = stoi(ctx->CONST()->getText());
-	addArray(variableName, type, size);
+	string size = ctx->CONST()->getText();
+	int s= stoi(size);
+	addArray(variableName, type, s);
 
+	cfg.current_bb->add_IRInstr(IRInstr::decltab, {variableName,size}, &variables);
 	return 0;
 }
 
@@ -251,8 +262,17 @@ antlrcpp::Any CodeGenVisitor::visitAffVar(ifccParser::AffVarContext *ctx){
 }
 
 antlrcpp::Any CodeGenVisitor::visitAffArray(ifccParser::AffArrayContext *ctx){
-	int valeur = stoi(ctx->CONST(1)->getText());
-	string constant = "$"+ to_string(valeur);
+	string var = ctx->VAR()->getText();
+	if(!doesExist(var)){
+		std::cerr << "Error : variable '" << var << "'undefined\n";
+		throw "Error undefined var";
+	}
+	
+	string tabSize = ctx->CONST(0)->getText();
+	string valeur = ctx->CONST(1)->getText();
+
+	//string constant = "$"+ to_string(valeur);
+	cfg.current_bb->add_IRInstr(IRInstr::afftab, {var,tabSize ,valeur}, &variables);
 	return 0;
 }
 
