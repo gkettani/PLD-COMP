@@ -92,7 +92,7 @@ void IRInstr::gen_asm(ostream &o)
     {
         string var = params[0];
         string varValue = params[1];
-        o << "    movb	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
+        o << "    movl	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
         break;
     }
 

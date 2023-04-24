@@ -20,7 +20,7 @@ instruction: declare ';'
            | addAffect ';'
            | subAffect ';'
            | ret ';' 
-           | ifStatement ';'
+           | ifStatement
            | standardFct ';'      
 ;
 
