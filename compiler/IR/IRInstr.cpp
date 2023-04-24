@@ -102,7 +102,6 @@ void IRInstr::gen_asm(ostream & o){
         	}else if(strcmp(typec,"char")==0) {
 		        varSize = 1;
 	        }
-            o <<"    movl	%rsp, %rbp\n";
             o <<"    subq        $" << x*varSize << ", (%rsp)\n";
 
             break;
@@ -122,9 +121,10 @@ void IRInstr::gen_asm(ostream & o){
 
             int i = stoi(index);
             string valeur = params[2];
-            o << "    movl	$" << valeur << ","<< (i*varSize)-(*variables)[var].second << "(%rbp)\n";
-
-            
+            //o << "    movl	$" << valeur << ","<< (i*varSize)-(*variables)[var].second << "(%rbp)\n";
+            static int offset = 0;
+            o << "    movl        $" << valeur << ", "<< offset << "(%rsp)\n";
+            offset += 4;
             break;
         }
 //////////////////////////////////////:
