@@ -32,8 +32,8 @@ void CodeGenVisitor::addArray(string name, string type, int size){
 	}else if(strcmp(typec,"double")){
 		x= 8;
 	}
-	int offset = ++varCounter * -(4*x);
-	variables[name].second = offset;
+	//int offset = ++varCounter * -(4*x);
+	variables[name].second = size*x;
 }
 
 bool CodeGenVisitor::doesExist(string var){
@@ -137,7 +137,7 @@ antlrcpp::Any CodeGenVisitor::visitArrayDec(ifccParser::ArrayDecContext *ctx){
 	int s= stoi(size);
 	addArray(variableName, type, s);
 
-	cfg.current_bb->add_IRInstr(IRInstr::decltab, {variableName,size}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::decltab, {variableName,size,type}, &variables);
 	return 0;
 }
 
@@ -268,11 +268,11 @@ antlrcpp::Any CodeGenVisitor::visitAffArray(ifccParser::AffArrayContext *ctx){
 		throw "Error undefined var";
 	}
 	
-	string tabSize = ctx->CONST(0)->getText();
+	string index = ctx->CONST(0)->getText();
 	string valeur = ctx->CONST(1)->getText();
 
 	//string constant = "$"+ to_string(valeur);
-	cfg.current_bb->add_IRInstr(IRInstr::afftab, {var,tabSize ,valeur}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::afftab, {var,index ,valeur}, &variables);
 	return 0;
 }
 

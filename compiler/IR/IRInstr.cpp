@@ -1,4 +1,5 @@
 #include "IRInstr.h"
+#include <cstring>
 #include <iostream>
 
 class BasicBlock;
@@ -92,18 +93,37 @@ void IRInstr::gen_asm(ostream & o){
         {
             string var = params[0];
             string tabSize = params[1];
+            string type = params[2];
             int x = stoi(tabSize);
-            o << "    subq	$" << x*4 << ", (%rsp)\n";
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+            o <<"    movl	%rsp, %rbp\n";
+            o <<"    subq        $" << x*varSize << ", (%rsp)\n";
 
             break;
         }
         case IRInstr::afftab:
         {
             string var = params[0];
-            string tabSize = params[1];
-            int x = stoi(tabSize);
+            string index = params[1];
+            string type = (*variables)[var].first;
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+
+            int i = stoi(index);
             string valeur = params[2];
-            o << "    subq	$" << x*4 << ", (%rsp)\n";
+            o << "    movl	$" << valeur << ","<< (i*varSize)-(*variables)[var].second << "(%rbp)\n";
+
             
             break;
         }
