@@ -18,6 +18,7 @@ class IRInstr{
             decl,
             decltab,
             afftab,
+            afftabvar,
             ret,
             ldconst,
             copy,

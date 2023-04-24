@@ -39,7 +39,8 @@ incrdecr: incrdecrop VAR
 affectation: type VAR '=' expr           #affDecVar
            | VAR '=' expr                #affVar
            | VAR '[' CONST ']' '=' CONST #affArrayConst
-           | VAR '[' CONST ']' '=' expr   #affArrayVar
+           | VAR '[' CONST ']' '=' VAR   #affArrayVar
+           | VAR '[' CONST ']' '=' expr   #affArrayExpr
 ;
 
 addAffect: VAR '+=' expr

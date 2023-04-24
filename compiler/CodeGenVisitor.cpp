@@ -34,6 +34,7 @@ void CodeGenVisitor::addArray(string name, string type, int size){
 	}
 	//int offset = ++varCounter * -(4*x);
 	variables[name].second = size*x;
+	varCounter = varCounter + size;
 }
 
 bool CodeGenVisitor::doesExist(string var){
@@ -276,17 +277,29 @@ antlrcpp::Any CodeGenVisitor::visitAffArrayConst(ifccParser::AffArrayConstContex
 	return 0;
 }
 antlrcpp::Any CodeGenVisitor::visitAffArrayVar(ifccParser::AffArrayVarContext *ctx){
-	string var = ctx->VAR()->getText();
+	string var = ctx->VAR(0)->getText();
 	/*Si variable inexistante dans la table, on throw une erreur*/
 	if(!doesExist(var)){
 		std::cerr << "Error : variable '" << var << "'undefined\n";
 		throw "Error undefined var";
 	}
 	string index = ctx->CONST()->getText();
+	string valeur = ctx ->VAR(1)->getText();
 
-	string valeur = visit(ctx->expr());
+	cfg.current_bb->add_IRInstr(IRInstr::afftabvar, {valeur,index}, &variables);
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitAffArrayExpr(ifccParser::AffArrayExprContext *ctx){
+	string var = ctx->VAR()->getText();
+	/*Si on essaie d'affecter une expression à une variable mais qu'elle n'a pas été déclarée, on throw une erreur*/
+	if(!doesExist(var)){ //si variable inexistante dans la table
+		//alors on a une erreur
+		std::cerr << "Error: variable '" << var << "' undefined\n";
+		throw "Error undefined variable";
+	}
 	
-	cfg.current_bb->add_IRInstr(IRInstr::afftab, {var,index ,valeur}, &variables);
+	visit(ctx -> expr());
 	return 0;
 }
 

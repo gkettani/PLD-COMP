@@ -121,10 +121,29 @@ void IRInstr::gen_asm(ostream & o){
 
             int i = stoi(index);
             string valeur = params[2];
-            //o << "    movl	$" << valeur << ","<< (i*varSize)-(*variables)[var].second << "(%rbp)\n";
+            
             static int offset = 0;
-            o << "    movl        $" << valeur << ", "<< offset << "(%rsp)\n";
-            offset += 4;
+            o << "    movl        $" << valeur << ", "<< (i*varSize)- offset << "(%rsp)\n";
+            
+            break;
+        }
+        case IRInstr::afftabvar:
+        {
+            string var = params[0];
+            string index = params[1];
+            string type = (*variables)[var].first;
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+
+            int i = stoi(index);
+            static int offset = 0;
+            o << "    movl        " << (*variables)[var].second << "(%rbp), %eax\n";
+            o << "    movl        %eax, " << (i*varSize)- offset << "(%rsp)\n";
             break;
         }
 //////////////////////////////////////:
