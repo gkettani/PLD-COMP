@@ -54,6 +54,7 @@ void IRInstr::compareOperation(ostream & o, string operation){
     o << "  andb	$1, %al\n";
     o << "  movzbl	%al, %eax\n";
 
+
 }
 
 void IRInstr::gen_asm(ostream & o){
@@ -87,6 +88,11 @@ void IRInstr::gen_asm(ostream & o){
             string type = (*variables)[var].first;
             if(type=="char")
             {
+                //Take into account test case of negation of char
+                if(constStr=="%eax")
+                {
+                    constStr = "%al";
+                }
                 o << " 	movb	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
             }
             else{
@@ -257,10 +263,19 @@ void IRInstr::gen_asm(ostream & o){
         case IRInstr::op_not: 
         {
             string var = params[0];
+            bool isChar = (*variables)[var].first =="char";
 
-            o << "  cmpl	$0, "<<(*variables)[var].second<<"(%rbp)\n";
-            o << "  sete  %al\n";
-            o << "  movzbl	%al, %eax\n";
+            //typeSuffix : l for long , b for byte -> depends on type of variable
+            string typeSuffix = "l";
+
+            if(isChar){ typeSuffix = "b"; }
+
+            o << "    cmp" << typeSuffix << "  $0, "<<(*variables)[var].second<<"(%rbp)\n";
+            o << "    sete  %al\n";
+            if(!isChar)
+            {
+                o << "    movzbl	%al, %eax\n";
+            }
             
             break;
         }
