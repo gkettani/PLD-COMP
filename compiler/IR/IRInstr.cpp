@@ -155,7 +155,7 @@ void IRInstr::gen_asm(ostream &o)
 
             int i = stoi(index);
             static int offset = 0;
-            o << "    movl        " << (*variables)[var].second << "(%rbp), %eax\n";
+            o << "    movl        " << (*variables)[valeur].second << "(%rbp), %eax\n";
             o << "    movl        %eax, " << (i*varSize)-(*variables)[var].second << "(%rbp)\n";
             
             break;
