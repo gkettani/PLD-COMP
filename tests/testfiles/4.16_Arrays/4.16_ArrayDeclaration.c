@@ -1,4 +1,6 @@
 int main(){
-    int tab[2];
+    int a = 0;
+    int tab[4];
+    int b;
     return 0;
 }

@@ -286,7 +286,7 @@ antlrcpp::Any CodeGenVisitor::visitAffArrayVar(ifccParser::AffArrayVarContext *c
 	string index = ctx->CONST()->getText();
 	string valeur = ctx ->VAR(1)->getText();
 
-	cfg.current_bb->add_IRInstr(IRInstr::afftabvar, {valeur,index}, &variables);
+	cfg.current_bb->add_IRInstr(IRInstr::afftabvar, {var,valeur,index}, &variables);
 	return 0;
 }
 
