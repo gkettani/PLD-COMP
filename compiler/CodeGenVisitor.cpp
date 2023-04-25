@@ -819,3 +819,26 @@ antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContex
 	
 	return 0; 
 }
+
+antlrcpp::Any CodeGenVisitor::visitPutcharVar(ifccParser::PutcharVarContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	string offset = to_string(variables[var].second);
+	cfg.current_bb->add_IRInstr(IRInstr::putcharVar, {offset}, &variables);
+	return 0;
+}
+antlrcpp::Any CodeGenVisitor::visitPutcharChar(ifccParser::PutcharCharContext *ctx)
+{
+	string var = ctx->ABCD()->getText();
+	int temp =(int)var[1];
+	string temp2=to_string(temp);
+	cfg.current_bb->add_IRInstr(IRInstr::putcharChar, {temp2}, &variables);
+	return 0;
+}
+antlrcpp::Any CodeGenVisitor::visitGetchar(ifccParser::GetcharContext *ctx)
+{
+	string var = ctx->VAR()->getText();
+	string offset = to_string(variables[var].second);
+	cfg.current_bb->add_IRInstr(IRInstr::getchar, {offset}, &variables);
+	return 0;
+}
