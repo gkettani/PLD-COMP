@@ -32,7 +32,6 @@ void CodeGenVisitor::addArray(string name, string type, int size){
 	}else if(strcmp(typec,"double")){
 		x= 8;
 	}
-	//int offset = ++varCounter * -(4*x);
 	variables[name].second = size*x;
 	varCounter = varCounter + size;
 }
