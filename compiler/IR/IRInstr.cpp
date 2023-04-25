@@ -62,6 +62,8 @@ void IRInstr::compareOperation(ostream &o, string operation)
     o << "    andb	$1, %al\n";
     o << "    movzbl	%al, %eax\n";
 
+
+
     // On stocke le résultat de l'opération (qui est pour l'instant dans le registre %eax) à l'addresse de la variable temporaire
     o << "    movl	%eax, " << (*variables)[varTmp].second << "(%rbp)\n";
 }
@@ -123,6 +125,11 @@ void IRInstr::gen_asm(ostream &o)
         string type = (*variables)[var].first;
         if (type == "char")
         {
+                //Take into account test case of negation of char
+                if(constStr=="%eax")
+                {
+                    constStr = "%al";
+                }
             o << "    movb	" << constStr << ", " << (*variables)[var].second << "(%rbp)\n";
         }
         else
