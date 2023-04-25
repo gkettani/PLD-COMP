@@ -40,7 +40,10 @@ class IRInstr{
             op_neg,
             op_not,
             conditional_jump,
-            absolute_jump
+            absolute_jump,
+            putcharChar,
+            putcharVar,
+            getchar
         } Operation;
 
         IRInstr(BasicBlock *bb, IRInstr::Operation op, vector<string> params, map<string, pair<string,int>> *symboleTable);

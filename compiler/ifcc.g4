@@ -20,7 +20,8 @@ instruction: declare ';'
            | addAffect ';'
            | subAffect ';'
            | ret ';' 
-           | ifStatement          
+           | ifStatement
+           | standardFct ';'      
 ;
 
 blocInstr: instruction *
@@ -101,10 +102,17 @@ elseStatement:
         'else' '{' blocInstr '}'                                
 ;
 
+standardFct:
+        'putchar' '(' ABCD ')'                          #putcharChar
+        |'putchar' '(' VAR ')'                          #putcharVar
+        |VAR '=' 'getchar' '(' ')'                      #getchar
+;
+
 INT : 'int' ;
 CHAR : 'char' ;
 VAR : [a-zA-Z][a-zA-Z0-9]* ;
 CONST : [0-9]+ ;
+CH : [0-9a-zA-Z] ;
 COMMENT : '/*' .*? '*/' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;
 WS    : [ \t\r\n] -> channel(HIDDEN);
