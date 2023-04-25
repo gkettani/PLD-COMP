@@ -1,4 +1,5 @@
 #include "IRInstr.h"
+#include <cstring>
 #include <iostream>
 
 class BasicBlock;
@@ -90,13 +91,76 @@ void IRInstr::gen_asm(ostream &o)
         break;
     }
 
-    case IRInstr::decl:
-    {
-        string var = params[0];
-        string varValue = params[1];
-        o << "    movl	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
-        break;
-    }
+
+        case IRInstr::decl:
+        {
+            string var = params[0];
+            string varValue = params[1];
+            o << "    movl	$" << varValue << ", " << (*variables)[var].second << "(%rbp)\n";
+            break;
+        }
+
+        case IRInstr::decltab:
+        {
+            string var = params[0];
+            string tabSize = params[1];
+            string type = params[2];
+            int x = stoi(tabSize);
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+            o <<"    subq        $" << x*varSize << ", (%rsp)\n";
+
+            break;
+        }
+        
+        case IRInstr::afftab:
+        {
+            string var = params[0];
+            string index = params[1];
+            string type = (*variables)[var].first;
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+
+            int i = stoi(index);
+            string valeur = params[2];
+            
+            o << "      movl        $" <<valeur << ",   "<<(i*varSize)-(*variables)[var].second << "(%rbp)\n";
+
+            break;
+        }
+        
+        case IRInstr::afftabvar:
+        {
+            string var = params[0];
+            string valeur = params[1];
+            string index = params[2];
+            string type = (*variables)[var].first;
+            int varSize;
+            const char* typec = type.c_str();
+	        if(strcmp(typec,"int")==0|strcmp(typec,"float")==0){
+		        varSize = 4;
+        	}else if(strcmp(typec,"char")==0) {
+		        varSize = 1;
+	        }
+
+            int i = stoi(index);
+            static int offset = 0;
+            o << "    movl        " << (*variables)[var].second << "(%rbp), %eax\n";
+            o << "    movl        %eax, " << (i*varSize)-(*variables)[var].second << "(%rbp)\n";
+            
+            break;
+        }
+
 
     case IRInstr::ret:
     {

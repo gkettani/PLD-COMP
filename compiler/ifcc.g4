@@ -27,7 +27,8 @@ instruction: declare ';'
 blocInstr: instruction *
 ;
 
-declare: type listvar 
+declare: type listvar               #listVarDec
+        | type VAR '[' CONST ']'    #arrayDec
 ;
 
 listvar: VAR (',' VAR)*
@@ -36,8 +37,11 @@ listvar: VAR (',' VAR)*
 incrdecr: incrdecrop VAR
 ;
 
-affectation: type VAR '=' expr
-           | VAR '=' expr
+affectation: type VAR '=' expr           #affDecVar
+           | VAR '=' expr                #affVar
+           | VAR '[' CONST ']' '=' CONST #affArrayConst
+           | VAR '[' CONST ']' '=' VAR   #affArrayVar
+           | VAR '[' CONST ']' '=' expr   #affArrayExpr
 ;
 
 addAffect: VAR '+=' expr
@@ -101,6 +105,7 @@ ifStatement:
 elseStatement:
         'else' '{' blocInstr '}'                                
 ;
+
 
 standardFct:
         'putchar' '(' ABCD ')'                          #putcharChar
