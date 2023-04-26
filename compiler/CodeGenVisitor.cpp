@@ -93,7 +93,9 @@ antlrcpp::Any CodeGenVisitor::visitStartMainBlock(ifccParser::StartMainBlockCont
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx) {
+antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx)
+{
+	// cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
 	/* On restore le %rbp dans le bloc final et on ajoute une instruction au bloc courant qui permet de sauter au bloc final*/
 	cfg.final_bb->add_IRInstr(IRInstr::restore_rbp, {}, &variables);
 	return 0;
@@ -737,7 +739,7 @@ antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
 	return var;
 }
 
-antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *ctx) 
+antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *ctx)
 {
 	/* Basic Block courant*/
 	BasicBlock *testBB = cfg.current_bb;
@@ -791,7 +793,10 @@ antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *c
 
 	/* On remplit le bloc thenBB avec ses intructions*/
 	cfg.current_bb = thenBB;
-	visit(ctx->blocInstr());
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	}
 	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
 	thenBB->add_IRInstr(IRInstr::absolute_jump, {thenBB->getExitTrue()->getLabel()}, &variables);
 
@@ -800,24 +805,27 @@ antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *c
 
 	/* On ajoute l'instruction qui permet de sauter au bloc qui suit endIfBB */
 	endIfBB->add_IRInstr(IRInstr::absolute_jump, {endIfBB->getExitTrue()->getLabel()}, &variables);
-	
+
 	/* A la fin du if...else, le bloc courant est le bloc qui suit endIfBB */
 	cfg.current_bb = endIfBB->getExitTrue();
 
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContext *ctx) 
+antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContext *ctx)
 {
-	BasicBlock* elseBB = cfg.current_bb;
+	BasicBlock *elseBB = cfg.current_bb;
 
 	/* On remplit le bloc elseBB avec ses intructions*/
-	visit(ctx->blocInstr());
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	}
 
 	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
 	elseBB->add_IRInstr(IRInstr::absolute_jump, {elseBB->getExitTrue()->getLabel()}, &variables);
-	
-	return 0; 
+
+	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitPutcharVar(ifccParser::PutcharVarContext *ctx)

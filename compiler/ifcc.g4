@@ -99,11 +99,13 @@ EQUALOP: '=='
 ;
 
 ifStatement: 
-        'if' '(' expr ')' '{' blocInstr '}' (elseStatement)?     
+        'if' '(' expr ')' '{' blocInstr '}' (elseStatement)?
+        | 'if' '(' expr ')' blocInstr (elseStatement)? 
 ;
 
 elseStatement:
-        'else' '{' blocInstr '}'                                
+        'else' '{' blocInstr '}'  
+        |'else' blocInstr                             
 ;
 
 
