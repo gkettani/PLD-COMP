@@ -95,7 +95,6 @@ antlrcpp::Any CodeGenVisitor::visitStartMainBlock(ifccParser::StartMainBlockCont
 
 antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx)
 {
-	// cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
 	/* On restore le %rbp dans le bloc final et on ajoute une instruction au bloc courant qui permet de sauter au bloc final*/
 	cfg.final_bb->add_IRInstr(IRInstr::restore_rbp, {}, &variables);
 	return 0;
@@ -824,6 +823,62 @@ antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContex
 
 	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
 	elseBB->add_IRInstr(IRInstr::absolute_jump, {elseBB->getExitTrue()->getLabel()}, &variables);
+
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitWhileStatement(ifccParser::WhileStatementContext *ctx)
+{
+	cfg.incrementCurrentNumberOfWhile();
+
+	BasicBlock *beforeWhileBB = cfg.current_bb;
+
+	BasicBlock *testBB = cfg.createTestBB();
+	cfg.current_bb = testBB;
+
+	string conditionEval = visit(ctx->expr());
+	testBB->setTestVarName(conditionEval);
+
+	BasicBlock *whileBodyBB = cfg.createWhileBB();
+
+	BasicBlock *afterWhileBB = cfg.createAfterWhileBB();
+	afterWhileBB->setExitTrue(beforeWhileBB->getExitTrue());
+	afterWhileBB->setExitFalse(beforeWhileBB->getExitFalse());
+
+	testBB->setExitTrue(whileBodyBB);
+	testBB->setExitFalse(afterWhileBB);
+
+	beforeWhileBB->setExitTrue(testBB);
+	beforeWhileBB->setExitFalse(nullptr);
+
+	whileBodyBB->setExitTrue(testBB);
+	whileBodyBB->setExitFalse(nullptr);
+
+	cfg.current_bb = whileBodyBB;
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	}
+
+	beforeWhileBB->add_IRInstr(IRInstr::absolute_jump, {beforeWhileBB->getExitTrue()->getLabel()}, &variables);
+	testBB->add_IRInstr(IRInstr::conditional_jump, {testBB->getTestVarName(), testBB->getExitTrue()->getLabel(), testBB->getExitFalse()->getLabel()}, &variables);
+	whileBodyBB->add_IRInstr(IRInstr::absolute_jump, {whileBodyBB->getExitTrue()->getLabel()}, &variables);
+
+	/* Si cfg.current_bb a changé, c'est qu'on est passé par un while imbriqué et qu'on est dans le afterWhileBB de ce while imbriqué*/
+	if(cfg.current_bb != whileBodyBB){
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+	}
+
+	cfg.current_bb = afterWhileBB;
+
+	/* Si on est à la fin du while principal (celui qui contient éventuellement des while imbriqués), currentBB devient le bloc qui suit afterWhileBB */
+	if (cfg.getCurrentNumberOfWhile() == 1)
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+		cfg.current_bb = cfg.current_bb->getExitTrue();
+	}
+
+	cfg.decrementCurrentNumberOfWhile();
 
 	return 0;
 }

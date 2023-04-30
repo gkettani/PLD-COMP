@@ -37,6 +37,34 @@ void CFG::add_finalBB()
     bbs.push_back(final_bb);
 }
 
+BasicBlock *CFG::createTestBB()
+{
+    nbWhile++;
+    string nameBB = ".testBB" + to_string(nbWhile);
+    BasicBlock *bb = new BasicBlock(this, nameBB);
+    bbs.push_back(bb);
+    // current_bb = bb;
+    return bb;
+}
+
+BasicBlock *CFG::createWhileBB()
+{
+    string nameBB = ".whileBB" + to_string(nbWhile);
+    BasicBlock *bb = new BasicBlock(this, nameBB);
+    bbs.push_back(bb);
+    // current_bb = bb;
+    return bb;
+}
+
+BasicBlock *CFG::createAfterWhileBB()
+{
+    string nameBB = ".afterWhileBB" + to_string(nbWhile);
+    BasicBlock *bb = new BasicBlock(this, nameBB);
+    bbs.push_back(bb);
+    // current_bb = bb;
+    return bb;
+}
+
 void CFG::gen_asm(ostream& o){
     o << ".globl	main\n";
     o << " main: \n";

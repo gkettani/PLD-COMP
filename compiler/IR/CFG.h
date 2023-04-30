@@ -14,6 +14,10 @@ class CFG
         /* Créer un basic block dans le CFG */
         BasicBlock * createBB();
 
+        BasicBlock *createTestBB();
+        BasicBlock *createWhileBB();
+        BasicBlock *createAfterWhileBB();
+
         /* Ajouter un basic block au CFG */
         void add_bb(BasicBlock *bb);
 
@@ -29,19 +33,28 @@ class CFG
         /* Pointeur sur le dernier basic bloc */
         BasicBlock *final_bb;
 
-        /*
-        // symbol table methods
-        void add_to_symbol_table(string var);
-        string create_new_tempvar(Type t);
-        int get_var_index(string name);
-        Type get_var_type(string name);
-        */
+        /* Compte le nombre de While dans le cfg */
+        int getCurrentNumberOfWhile() {
+            return currentNumberOfWhile;
+        }
 
-        // string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+        /* Incrémente le nombre de While dans le cfg */
+        void incrementCurrentNumberOfWhile()
+        {
+            ++currentNumberOfWhile;
+        }
+
+        /* Décrémente le nombre de While dans le cfg */
+        void decrementCurrentNumberOfWhile()
+        {
+            --currentNumberOfWhile;
+        }
 
     protected:
         map<string, pair<string,int>> *variables;   /* Pointeur sur la table des symboles */
         vector<BasicBlock *> bbs;                   /* Tous les basic blocks du CFG*/
+        int nbWhile = 0;
+        int currentNumberOfWhile = 0;
 };
 
 #endif

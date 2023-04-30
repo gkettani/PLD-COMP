@@ -21,6 +21,7 @@ instruction: declare ';'
            | subAffect ';'
            | ret ';' 
            | ifStatement
+           | whileStatement
            | standardFct ';'      
 ;
 
@@ -108,6 +109,9 @@ elseStatement:
         |'else' blocInstr                             
 ;
 
+whileStatement :
+	'while' '(' expr ')' '{' blocInstr '}'
+;
 
 standardFct:
         'putchar' '(' ABCD ')'                          #putcharChar
