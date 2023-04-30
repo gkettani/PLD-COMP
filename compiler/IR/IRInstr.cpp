@@ -41,21 +41,33 @@ void IRInstr::compareOperation(ostream &o, string operation)
     string var1 = params[0];
     string var2 = params[1];
     string varTmp = params[2];
+    string opType ="l";
+
+    if((*variables)[var1].first=="char" && (*variables)[var2].first=="char"){
+        opType="b";
+    }
 
     if (var1[0] != '$' && var2[0] == '$')
     {
-        o << "    cmpl	" << var2 << ", " << (*variables)[var1].second << "(%rbp)\n";
+        o << "    cmp"<<opType<<"	" << var2 << ", " << (*variables)[var1].second << "(%rbp)\n";
     }
 
     if (var1[0] == '$' && var2[0] != '$')
     {
-        o << "    cmpl	" << var1 << ", " << (*variables)[var2].second << "(%rbp)\n";
+        o << "    cmp"<<opType<<"	" << var1 << ", " << (*variables)[var2].second << "(%rbp)\n";
     }
 
     if (var1[0] != '$' && var2[0] != '$')
     {
-        o << "    movl	" << (*variables)[var1].second << "(%rbp), %eax\n";
-        o << "    cmpl	" << (*variables)[var2].second << "(%rbp), %eax\n";
+        string moveType="movl";
+        string registerType = "eax";
+        if(opType=="b")
+        {
+            moveType = "movzbl";
+            registerType ="al";
+        }
+        o << "    "<<moveType<<"	" << (*variables)[var1].second << "(%rbp), %eax\n";
+        o << "    cmp"<<opType<<"	" << (*variables)[var2].second << "(%rbp), %"<<registerType<<"\n";
     }
 
     o << "\t" + operation + "\t"
