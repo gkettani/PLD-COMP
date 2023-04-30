@@ -93,7 +93,8 @@ antlrcpp::Any CodeGenVisitor::visitStartMainBlock(ifccParser::StartMainBlockCont
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx) {
+antlrcpp::Any CodeGenVisitor::visitEndMainBlock(ifccParser::EndMainBlockContext *ctx)
+{
 	/* On restore le %rbp dans le bloc final et on ajoute une instruction au bloc courant qui permet de sauter au bloc final*/
 	cfg.final_bb->add_IRInstr(IRInstr::restore_rbp, {}, &variables);
 	return 0;
@@ -608,41 +609,6 @@ antlrcpp::Any CodeGenVisitor::visitMultDivExpr(ifccParser::MultDivExprContext *c
 	return resultStr;
 }
 
-/*	
-antlrcpp::Any CodeGenVisitor::visitModExpr(ifccParser::ModExprContext *ctx)
-{
-	string var1 = visit(ctx->expr(0));
-	string var2 = visit(ctx->expr(1));
-
-	//Si une variable est utilisée dans une expression et qu'elle n'a pas été déclarée alors c'est une erreur
-	checkDeclaredExpr(var1, var2);
-
-	string resultStr = "";
-
-	if (var1[0] == '$' && var2[0] == '$')
-	{
-		int val1 = stoi(var1.substr(1));
-		int val2 = stoi(var2.substr(1));
-		if (val2 == 0)
-		{
-			std::cerr<< "Error : Division by 0" << endl;
-			//throw "Division by 0";
-		}
-		int result = val1 % val2;
-		resultStr = "$" + to_string(result);
-	}
-	else
-	{
-		string varTmp = "!tmp" + varCounter;
-		addVariable(varTmp);
-
-		cfg.current_bb->add_IRInstr(IRInstr::mod, {var1, var2, varTmp}, &variables);
-		resultStr = varTmp;
-	}
-
-	return resultStr;
-}*/
-
 antlrcpp::Any CodeGenVisitor::visitListvar(ifccParser::ListvarContext *ctx)
 {
 	//récuperer la liste des variables 
@@ -737,32 +703,43 @@ antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
 	return var;
 }
 
-antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *ctx) 
+antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *ctx)
 {
-	/* Basic Block courant*/
-	BasicBlock *testBB = cfg.current_bb;
+	/* Niveau d'imbrication dans lequel on se trouve */
+	cfg.incrementCurrentNumberOfWhileOrIf();
 
-	/* On visite l'expression de la condition du if. On recupère le nom de la variable temporaire qui contient la valeur booléenne de cette expression*/
+	/* Basic Block courant */
+	BasicBlock *beforeIfBB = cfg.current_bb;
+
+	/* Basic Block du test */
+	BasicBlock *testBB = cfg.createTestIfBB();
+	cfg.current_bb = testBB;
+
+	/* On visite l'expression de la condition du if. On recupère le nom de la variable temporaire qui contient la valeur booléenne de cette expression */
 	string conditionEval = visit(ctx->expr());
 
 	/* On stocke dans l'attribut TestVarName le nom de cette variable temporaire */
 	testBB->setTestVarName(conditionEval);
 
 	/* Création d'un basic block correspondant au then*/
-	BasicBlock *thenBB = cfg.createBB();
+	BasicBlock *thenBB = cfg.createThenBB();
 
-	/* Création d'un basic block correspondant au endIf */
-	BasicBlock *endIfBB = cfg.createBB();
+	/* Création d'un basic block correspondant au afterIf */
+	BasicBlock *afterIfBB = cfg.createAfterIfBB();
 
-	/* endIfBB recupère les successeurs de testBB*/
-	endIfBB->setExitTrue(testBB->getExitTrue());
-	endIfBB->setExitFalse(testBB->getExitFalse());
+	/* afterIfBB recupère les successeurs de testBB*/
+	afterIfBB->setExitTrue(beforeIfBB->getExitTrue());
+	afterIfBB->setExitFalse(beforeIfBB->getExitFalse());
+
+	/* beforeIfBB pointe sur le bloc testBB */
+	beforeIfBB->setExitTrue(testBB);
+	beforeIfBB->setExitFalse(nullptr);
 
 	/* Dans le cas où l'expression du if est True, le bloc suivant du bloc testBB est thenBB*/
 	testBB->setExitTrue(thenBB);
 
 	/* Blocs suivants de thenBB*/
-	thenBB->setExitTrue(endIfBB);
+	thenBB->setExitTrue(afterIfBB);
 	thenBB->setExitFalse(nullptr);
 
 	/* Vérification de la présence d'un elseStatement*/
@@ -770,54 +747,149 @@ antlrcpp::Any CodeGenVisitor::visitIfStatement(ifccParser::IfStatementContext *c
 	if (hasElseStatement)
 	{
 		/* Création d'un basic block correspondant au else*/
-		BasicBlock *elseBB = cfg.createBB();
+		BasicBlock *elseBB = cfg.createElseBB();
 
 		/* Dans le cas où l'expression du if est False, le bloc suivant du bloc courant est elseBB*/
 		testBB->setExitFalse(elseBB);
 
 		/* Successeurs de elseBB*/
-		elseBB->setExitTrue(endIfBB);
+		elseBB->setExitTrue(afterIfBB);
 		elseBB->setExitFalse(nullptr);
 
 		/* On remplit le bloc elseBB avec ses intructions*/
 		cfg.current_bb = elseBB;
 		visit(ctx->elseStatement());
+
+		/* On rajoute un jump vers le bloc suivant du else BB*/
+		elseBB->add_IRInstr(IRInstr::absolute_jump, {elseBB->getExitTrue()->getLabel()}, &variables);
+
+		/* Si, en visitant les instructions du else, on s'est retrouvé dans un if ou while imbriqué, le current_bb correspond au afterIf ou afterWhile de ce if ou while imbriqué 
+		On jump donc au bloc suivant de ce current_bb */
+		if (cfg.current_bb != elseBB)
+		{
+			cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+		}
 	}
 	else
 	{
-		/* S'il n'y a pas de else et dans le cas où l'expression du if est False, le bloc suivant du bloc courant est endIfBB*/
-		testBB->setExitFalse(endIfBB);
+		/* S'il n'y a pas de else et dans le cas où l'expression du if est False, le bloc suivant du bloc courant est afterIfBB*/
+		testBB->setExitFalse(afterIfBB);
 	}
 
 	/* On remplit le bloc thenBB avec ses intructions*/
 	cfg.current_bb = thenBB;
-	visit(ctx->blocInstr());
-	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
-	thenBB->add_IRInstr(IRInstr::absolute_jump, {thenBB->getExitTrue()->getLabel()}, &variables);
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	}else if(ctx->instruction())
+	{
+		visit(ctx->instruction());
+	}
+
+	/* On ajoute au bloc beforeIfBB l'instruction qui permet de sauter au bloc suivant*/
+	beforeIfBB->add_IRInstr(IRInstr::absolute_jump, {beforeIfBB->getExitTrue()->getLabel()}, &variables);
 
 	/* On ajoute au bloc testBB l'instruction qui permet de savoir vers quel bloc on saute depuis testBB */
 	testBB->add_IRInstr(IRInstr::conditional_jump, {testBB->getTestVarName(), testBB->getExitTrue()->getLabel(), testBB->getExitFalse()->getLabel()}, &variables);
-
-	/* On ajoute l'instruction qui permet de sauter au bloc qui suit endIfBB */
-	endIfBB->add_IRInstr(IRInstr::absolute_jump, {endIfBB->getExitTrue()->getLabel()}, &variables);
 	
-	/* A la fin du if...else, le bloc courant est le bloc qui suit endIfBB */
-	cfg.current_bb = endIfBB->getExitTrue();
+	/* On ajoute au bloc thenBB l'instruction qui permet de sauter au bloc suivant */
+	thenBB->add_IRInstr(IRInstr::absolute_jump, {thenBB->getExitTrue()->getLabel()}, &variables);
+
+	/* Si en visitant les instructions du then, on s'est retrouvé dans un if ou while imbriqué, le current_bb correspond au afterIf ou afterWhile de ce if ou while imbriqué
+	On jump donc au bloc suivant de ce current_bb */
+	if (cfg.current_bb != thenBB)
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+	}
+
+	/* A la fin du if...else, le bloc courant est le bloc afterIfBB */
+	cfg.current_bb = afterIfBB;
+
+	/* Quand on on a finit de parcourir le while ou if parent, on peut passer au bloc qui suit afterIfBB*/
+	if (cfg.getCurrentNumberOfWhileOrIf() == 1)
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+		cfg.current_bb = cfg.current_bb->getExitTrue();
+	}
+
+	/* On décrémente le niveau d'imbrication dans lequel on se trouve */
+	cfg.decrementCurrentNumberOfWhileOrIf();
 
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContext *ctx) 
+antlrcpp::Any CodeGenVisitor::visitElseStatement(ifccParser::ElseStatementContext *ctx)
 {
-	BasicBlock* elseBB = cfg.current_bb;
-
 	/* On remplit le bloc elseBB avec ses intructions*/
-	visit(ctx->blocInstr());
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	}else if(ctx->instruction()) {
+		visit(ctx->instruction());
+	}
 
-	/* On ajoute l'instruction qui permet de sauter au bloc qui suit thenBB */
-	elseBB->add_IRInstr(IRInstr::absolute_jump, {elseBB->getExitTrue()->getLabel()}, &variables);
-	
-	return 0; 
+	return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitWhileStatement(ifccParser::WhileStatementContext *ctx)
+{
+	/* Même principe que le if..else */
+
+	cfg.incrementCurrentNumberOfWhileOrIf();
+
+	BasicBlock *beforeWhileBB = cfg.current_bb;
+
+	BasicBlock *testBB = cfg.createTestWhileBB();
+	cfg.current_bb = testBB;
+
+	string conditionEval = visit(ctx->expr());
+	testBB->setTestVarName(conditionEval);
+
+	BasicBlock *whileBodyBB = cfg.createWhileBB();
+
+	BasicBlock *afterWhileBB = cfg.createAfterWhileBB();
+	afterWhileBB->setExitTrue(beforeWhileBB->getExitTrue());
+	afterWhileBB->setExitFalse(beforeWhileBB->getExitFalse());
+
+	testBB->setExitTrue(whileBodyBB);
+	testBB->setExitFalse(afterWhileBB);
+
+	beforeWhileBB->setExitTrue(testBB);
+	beforeWhileBB->setExitFalse(nullptr);
+
+	whileBodyBB->setExitTrue(testBB);
+	whileBodyBB->setExitFalse(nullptr);
+
+	cfg.current_bb = whileBodyBB;
+	if (ctx->blocInstr())
+	{
+		visit(ctx->blocInstr());
+	} else if (ctx->instruction())
+	{
+		visit(ctx->instruction());
+	}
+
+	beforeWhileBB->add_IRInstr(IRInstr::absolute_jump, {beforeWhileBB->getExitTrue()->getLabel()}, &variables);
+	testBB->add_IRInstr(IRInstr::conditional_jump, {testBB->getTestVarName(), testBB->getExitTrue()->getLabel(), testBB->getExitFalse()->getLabel()}, &variables);
+	whileBodyBB->add_IRInstr(IRInstr::absolute_jump, {whileBodyBB->getExitTrue()->getLabel()}, &variables);
+
+	/* Si cfg.current_bb a changé, c'est qu'on est passé par un while imbriqué et qu'on est dans le afterWhileBB de ce while imbriqué*/
+	if(cfg.current_bb != whileBodyBB){
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+	}
+
+	cfg.current_bb = afterWhileBB;
+
+	/* Si on est à la fin du while principal (celui qui contient éventuellement des while imbriqués), currentBB devient le bloc qui suit afterWhileBB */
+	if (cfg.getCurrentNumberOfWhileOrIf() == 1)
+	{
+		cfg.current_bb->add_IRInstr(IRInstr::absolute_jump, {cfg.current_bb->getExitTrue()->getLabel()}, &variables);
+		cfg.current_bb = cfg.current_bb->getExitTrue();
+	}
+
+	cfg.decrementCurrentNumberOfWhileOrIf();
+
+	return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitPutcharVar(ifccParser::PutcharVarContext *ctx)
@@ -827,6 +899,7 @@ antlrcpp::Any CodeGenVisitor::visitPutcharVar(ifccParser::PutcharVarContext *ctx
 	cfg.current_bb->add_IRInstr(IRInstr::putcharVar, {offset}, &variables);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitPutcharChar(ifccParser::PutcharCharContext *ctx)
 {
 	string var = ctx->ABCD()->getText();
@@ -835,6 +908,7 @@ antlrcpp::Any CodeGenVisitor::visitPutcharChar(ifccParser::PutcharCharContext *c
 	cfg.current_bb->add_IRInstr(IRInstr::putcharChar, {temp2}, &variables);
 	return 0;
 }
+
 antlrcpp::Any CodeGenVisitor::visitGetchar(ifccParser::GetcharContext *ctx)
 {
 	string var = ctx->VAR()->getText();
