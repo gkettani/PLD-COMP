@@ -14,7 +14,14 @@ class CFG
         /* Créer un basic block dans le CFG */
         BasicBlock * createBB();
 
-        BasicBlock *createTestBB();
+        /* Créer les basics blocks du if..else avec un nommage particulier */
+        BasicBlock *createTestIfBB();
+        BasicBlock *createThenBB();
+        BasicBlock *createElseBB();
+        BasicBlock *createAfterIfBB();
+
+        /* Créer les basics blocks du while avec un nommage particulier */
+        BasicBlock *createTestWhileBB();
         BasicBlock *createWhileBB();
         BasicBlock *createAfterWhileBB();
 
@@ -34,27 +41,32 @@ class CFG
         BasicBlock *final_bb;
 
         /* Compte le nombre de While dans le cfg */
-        int getCurrentNumberOfWhile() {
-            return currentNumberOfWhile;
+        int getCurrentNumberOfWhileOrIf() {
+            return CurrentNumberOfWhileOrIf;
         }
 
         /* Incrémente le nombre de While dans le cfg */
-        void incrementCurrentNumberOfWhile()
+        void incrementCurrentNumberOfWhileOrIf()
         {
-            ++currentNumberOfWhile;
+            ++CurrentNumberOfWhileOrIf;
         }
 
         /* Décrémente le nombre de While dans le cfg */
-        void decrementCurrentNumberOfWhile()
+        void decrementCurrentNumberOfWhileOrIf()
         {
-            --currentNumberOfWhile;
+            --CurrentNumberOfWhileOrIf;
         }
 
     protected:
         map<string, pair<string,int>> *variables;   /* Pointeur sur la table des symboles */
         vector<BasicBlock *> bbs;                   /* Tous les basic blocks du CFG*/
+
+        /* Compteur de While et de If par Cfg pour le nommage des basics blocks (Utile pour le Debuggage)*/
         int nbWhile = 0;
-        int currentNumberOfWhile = 0;
+        int nbIf = 0;
+
+        /* Numéro du if ou du while imbriqué (1 pour parent, puis on inscrémente pour les enfants)*/
+        int CurrentNumberOfWhileOrIf = 0;
 };
 
 #endif

@@ -6,13 +6,14 @@ int main()
 
     while (a < 3)
     {
-        c = 4;
+        a = 100;
         while (b < 2)
         {
             b = b + 1;
+            a = a + 1;
         }
         a = a + 1;
     }
 
-    return c;
+    return a;
 }

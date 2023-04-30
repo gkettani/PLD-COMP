@@ -101,16 +101,17 @@ EQUALOP: '=='
 
 ifStatement: 
         'if' '(' expr ')' '{' blocInstr '}' (elseStatement)?
-        | 'if' '(' expr ')' blocInstr (elseStatement)? 
+        | 'if' '(' expr ')' instruction (elseStatement)? 
 ;
 
 elseStatement:
         'else' '{' blocInstr '}'  
-        |'else' blocInstr                             
+        |'else'  instruction                             
 ;
 
 whileStatement :
 	'while' '(' expr ')' '{' blocInstr '}'
+        | 'while' '(' expr ')' instruction
 ;
 
 standardFct:

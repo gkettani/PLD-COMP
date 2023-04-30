@@ -16,19 +16,19 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override ;
 		virtual antlrcpp::Any visitStartMainBlock(ifccParser::StartMainBlockContext *ctx) override;
 		virtual antlrcpp::Any visitEndMainBlock(ifccParser::EndMainBlockContext *ctx) override;
-		virtual antlrcpp::Any visitListVarDec(ifccParser::ListVarDecContext *context) override;
-		virtual antlrcpp::Any visitArrayDec(ifccParser::ArrayDecContext *context) override;
+		virtual antlrcpp::Any visitListVarDec(ifccParser::ListVarDecContext *ctx) override;
+		virtual antlrcpp::Any visitArrayDec(ifccParser::ArrayDecContext *ctx) override;
 		virtual antlrcpp::Any visitType(ifccParser::TypeContext *ctx) override;
 		virtual antlrcpp::Any visitInstruction(ifccParser::InstructionContext *ctx) override;
 		virtual antlrcpp::Any visitRetVar(ifccParser::RetVarContext *ctx) override;
 		virtual antlrcpp::Any visitRetConst(ifccParser::RetConstContext *ctx) override;
 		virtual antlrcpp::Any visitRetExpr(ifccParser::RetExprContext *ctx) override;
 		virtual antlrcpp::Any visitRetNothing(ifccParser::RetNothingContext *ctx) override;
-		virtual antlrcpp::Any visitAffDecVar(ifccParser::AffDecVarContext *context) override;
-		virtual antlrcpp::Any visitAffVar(ifccParser::AffVarContext *context) override;
-		virtual antlrcpp::Any visitAffArrayConst(ifccParser::AffArrayConstContext *context) override;
-    	virtual antlrcpp::Any visitAffArrayVar(ifccParser::AffArrayVarContext *context) override;
-		virtual antlrcpp::Any visitAffArrayExpr(ifccParser::AffArrayExprContext *context) override;
+		virtual antlrcpp::Any visitAffDecVar(ifccParser::AffDecVarContext *ctx) override;
+		virtual antlrcpp::Any visitAffVar(ifccParser::AffVarContext *ctx) override;
+		virtual antlrcpp::Any visitAffArrayConst(ifccParser::AffArrayConstContext *ctx) override;
+    	virtual antlrcpp::Any visitAffArrayVar(ifccParser::AffArrayVarContext *ctx) override;
+		virtual antlrcpp::Any visitAffArrayExpr(ifccParser::AffArrayExprContext *ctx) override;
 		virtual antlrcpp::Any visitVarExpr(ifccParser::VarExprContext *ctx) override;
 		virtual antlrcpp::Any visitConstExpr(ifccParser::ConstExprContext *ctx) override;
 		virtual antlrcpp::Any visitParExpr(ifccParser::ParExprContext *ctx) override;
@@ -50,9 +50,9 @@ class  CodeGenVisitor : public ifccBaseVisitor {
 		virtual antlrcpp::Any visitIfStatement(ifccParser::IfStatementContext *ctx) override;
 		virtual antlrcpp::Any visitElseStatement(ifccParser::ElseStatementContext *ctx) override;
 		virtual antlrcpp::Any visitWhileStatement(ifccParser::WhileStatementContext *ctx) override;
-		virtual antlrcpp::Any visitPutcharVar(ifccParser::PutcharVarContext *context) override;
-    	virtual antlrcpp::Any visitPutcharChar(ifccParser::PutcharCharContext *context) override;
-    	virtual antlrcpp::Any visitGetchar(ifccParser::GetcharContext *context) override;
+		virtual antlrcpp::Any visitPutcharVar(ifccParser::PutcharVarContext *ctx) override;
+    	virtual antlrcpp::Any visitPutcharChar(ifccParser::PutcharCharContext *ctx) override;
+    	virtual antlrcpp::Any visitGetchar(ifccParser::GetcharContext *ctx) override;
 
 	protected:
 		CFG& cfg;
