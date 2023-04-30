@@ -8,26 +8,46 @@ The compiler takes a C-program as input and outputs the corresponding x86 ASM co
 
 ## List of features supported by our compiler ifcc
 
+### Mandatory features implemented
+
 - Comments and preprocessor directives are ignored 
-- 32 bits int data type can be used 
+- char and 32 bits int data types can be used 
+- IR architecture (IRInstr, BasicBlock, CFG)
 - Return instruction
-- Variable declaration
+- Variable declaration (anywhere in the code)
 - Multiple variable declaration
 - Variable assignement  
 - Variable initialization
 - Memory address management (Symbol table)
+- Characters and consts
+- Adapt the size of the offset to the data type (in the Symbol Table)
 - Arithmetic operations (+, -, *, /)
 - Bit operations (&, |, ^)
 - Comparison operations (==, !=, <, >)
 - Unary operations (!, -)
+- Standard functions putchar and getchar 
 - Expressions (multiple variables or constants combined with operators)
 - Order of operations, operators associativity
 - Parentheses around expression  
+- Blocks {}
+- if..else statement (with or without {})
+- Nested if..else statements
+- while (with or without {})
+- Nested while statements
+- Return expression from anywhere in the code
 - Static checking: the same variable (same type and same name) can not be declared multiple times
 - Static checking: each declared variable is used at least once
-- IR architecture (IRInstr, BasicBlock, CFG)
+- Static checking: each used variable has been declared
 
-**Clarification**: Our symbol table is a map where the key is the name of the variable. We don't take into account the type (it will be done in the second sprint). Constants can also be stored in our symbol table, we give them a name that starts with a '$'. 
+All mandatory features have been implemented except function calls. 
+
+### Optional features implemented
+
+- Division and modulo
+- Assignment operators (+=, -=), increment (++), decrement (--)
+- Arrays (1 dimension)
+- Simple constants propagation (optimization) -> In our operations, when the operands are constants, we immediately calculate the result and we use it
+- char comparison 
 
 ## Quick description of the code base 
 
