@@ -175,17 +175,6 @@ antlrcpp::Any CodeGenVisitor::visitRetVar(ifccParser::RetVarContext *ctx){
 	return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitRetConst(ifccParser::RetConstContext *ctx){
-	string var = "$" + ctx->CONST()->getText();
-	cfg.current_bb->add_IRInstr(IRInstr::ret, {var}, &variables);
-	//move to the last basic block
-	cfg.current_bb->setExitTrue(cfg.final_bb);
-	cfg.current_bb->setExitFalse(nullptr);
-	cfg.current_bb=cfg.final_bb;
-	cfg.final_bb->add_IRInstr(IRInstr::absolute_jump, {".endLabel"}, &variables);
-	return 0;
-}
-
 antlrcpp::Any CodeGenVisitor::visitRetExpr(ifccParser::RetExprContext *ctx){
 	string var = visit(ctx->expr()).as<string>();
 	var = convertCharToInt(var);
@@ -646,14 +635,13 @@ antlrcpp::Any CodeGenVisitor::visitAlphabets(ifccParser::AlphabetsContext *ctx) 
 	return var;
 };
 
-antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitIncdec(ifccParser::IncdecContext *ctx)
 {
-	// TODO: indiquer que la variable est utilisée
 	string var = ctx->VAR()->getText();
 	string varTmp = "!tmp" + varCounter;
 	addVariable(varTmp);
 
-	string op = ctx->incrdecrop()->getText();
+	string op = ctx->incdecop()->getText();
 
 	if (op == "++")
 	{
@@ -668,16 +656,15 @@ antlrcpp::Any CodeGenVisitor::visitIncrdecr(ifccParser::IncrdecrContext *ctx)
 	return var;
 }
 
-antlrcpp::Any CodeGenVisitor::visitIncrdecrExpr(ifccParser::IncrdecrExprContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitIncdecExpr(ifccParser::IncdecExprContext *ctx)
 {
-	string var = visit(ctx->incrdecr());
+	string var = visit(ctx->incdec());
 	return var;
 }
 
 antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
 {
 	string var = ctx->VAR()->getText();
-	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
 	string var2 = visit(ctx->expr());
 
 	string varTmp = "!tmp" + varCounter;
@@ -692,7 +679,6 @@ antlrcpp::Any CodeGenVisitor::visitAddAffect(ifccParser::AddAffectContext *ctx)
 antlrcpp::Any CodeGenVisitor::visitSubAffect(ifccParser::SubAffectContext *ctx)
 {
 	string var = ctx->VAR()->getText();
-	// TODO: verifier que la variable est déclarée, et indiquer qu'elle est utilisée
 	string var2 = visit(ctx->expr());
 	string varTmp = "!tmp" + varCounter;
 	addVariable(varTmp);
