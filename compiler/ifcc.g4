@@ -15,7 +15,7 @@ type: INT | CHAR
 ;
 
 instruction: declare ';'
-           | incrdecr ';'
+           | incdec ';'
            | affectation ';'
            | addAffect ';'
            | subAffect ';'
@@ -35,7 +35,7 @@ declare: type listvar               #listVarDec
 listvar: VAR (',' VAR)*
 ;
 
-incrdecr: incrdecrop VAR
+incdec: incdecop VAR
 ;
 
 affectation: type VAR '=' expr           #affDecVar
@@ -59,7 +59,7 @@ expr: CONST                      #constExpr
     | usedvar                    #varExpr
     | '(' expr ')'               #parExpr
     | unaryop expr               #unaryExpr
-    | incrdecr                   #incrdecrExpr
+    | incdec                     #incdecExpr
     | expr multdivop expr        #multDivExpr
     | expr addsubop expr         #addSubExpr   
     | expr COMPAREOP expr        #compareExpr
@@ -71,7 +71,6 @@ expr: CONST                      #constExpr
 ;
 
 ret: RET VAR                     #retVar
-   | RET CONST                   #retConst
    | RET expr                    #retExpr
    | RET                         #retNothing
 ;
@@ -88,7 +87,7 @@ addsubop: '-' | '+'
 multdivop: '*' | '/' | '%'
 ;
 
-incrdecrop: '++' | '--'
+incdecop: '++' | '--'
 ;
 
 COMPAREOP: '>'
