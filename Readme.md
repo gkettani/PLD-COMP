@@ -49,6 +49,8 @@ All mandatory features have been implemented except function calls.
 - Simple constants propagation (optimization) -> In our operations, when the operands are constants, we immediately calculate the result and we use it
 - char comparison 
 
+**IMPORTANT**: When you will run the tests, it will freeze for the testfiles/standardFuctions/getcharFunction test file. You should type 2 times the same character to pass the test (it's because we use getchar in our test file, the first character is for gcc compiler and the second one for our ifcc compiler)
+
 ## Quick description of the code base 
 
 Main components of PLD-COMP base code:
@@ -117,6 +119,7 @@ For each test, there are 5 possible outcomes:
 **All tests should be OK.**   
 **Some tests may fail if you use a more recent version of GCC.**
 
+**IMPORTANT**: When you will run the tests, it will freeze for the testfiles/standardFuctions/getcharFunction test file. You should type 2 times the same character to pass the test (it's because we use getchar in our test file, the first character is for gcc compiler and the second one for our ifcc compiler)
 
 ## Authors
 Aymane GHANAM \
